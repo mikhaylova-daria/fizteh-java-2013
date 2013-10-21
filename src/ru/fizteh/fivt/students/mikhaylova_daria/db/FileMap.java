@@ -1,74 +1,314 @@
 package ru.fizteh.fivt.students.mikhaylova_daria.db;
 
-import java.io.IOException;
-    import java.util.HashMap;
+import java.io.*;
+import java.util.HashMap;
+import java.util.Vector;
 
 public class FileMap {
-    static HashMap<String, String> fileMap = new HashMap<String, String>();
-        public static void main(String[] arg) {
+    HashMap<String, String> fileMap = new HashMap<String, String>();
+    File file;
+    Short[] id;
+    Boolean isLoaded;
+    FileMap() {
 
+    }
+
+    FileMap(File file, Short[] id) {
+        this.file = file;
+        this.id = id;
+        isLoaded = false;
+    }
+
+    public void put(String[] arg) throws IOException {
+        if (!isLoaded) {
+            isLoaded = true;
+            readerFile();
         }
-
-        public static void put(String[] arg) throws IOException {
-            if (arg.length != 2) {
-                throw new IOException("put: Wrong number of arguments");
-            }
-            arg[1] = arg[1].trim();
-            arg = arg[1].split("\\s+", 2);
-            if (arg.length != 2) {
-                throw new IOException("put: Wrong number of arguments");
-            }
-            if (!fileMap.containsKey(arg[0])) {
-                 System.out.println("new");
-            }
+        if (arg.length != 2) {
+            throw new IOException("put: Wrong number of arguments");
+        }
+        arg[1] = arg[1].trim();
+        arg = arg[1].split("\\s+", 2);
+        if (arg.length != 2) {
+            throw new IOException("put: Wrong number of arguments");
+        }
+        if (!fileMap.containsKey(arg[0])) {
+             System.out.println("new");
+        }
+        if (fileMap.containsKey(arg[0])) {
             if (fileMap.containsKey(arg[0])) {
-                if (fileMap.containsKey(arg[0])) {
-                    System.out.println("overwrite\n" + fileMap.get(arg[0]));
-                }
-            }
-            fileMap.put(arg[0], arg[1]);
-        }
-
-        public static void get(String[] arg) throws IOException {
-            if (arg.length != 2) {
-                throw new IOException("get: Wrong number of arguments");
-            }
-            arg[1] = arg[1].trim();
-            arg = arg[1].split("\\s+");
-            if (arg.length != 1) {
-                throw new IOException("get: Wrong number of arguments");
-            }
-            if (fileMap.containsKey(arg[0])) {
-                System.out.println("found\n" + fileMap.get(arg[0]));
-            } else {
-                System.out.println("not found");
+                System.out.println("overwrite\n" + fileMap.get(arg[0]));
             }
         }
-
-        public static void remove(String[] arg) throws  IOException {
-            if (arg.length != 2) {
-                throw new IOException("remove: Wrong number of arguments");
-            }
-            arg[1] = arg[1].trim();
-            arg = arg[1].split("\\s+");
-            if (arg.length != 1) {
-                throw new IOException("remove: Wrong number of arguments");
-            }
-            if (fileMap.containsKey(arg[0])) {
-                fileMap.remove(arg[0]);
-                System.out.println("removed");
-            } else {
-                System.out.println("not found");
-            }
+        fileMap.put(arg[0], arg[1]);
+        try {
+            this.writerFile();
+        } catch (Exception e) {
+            System.err.println("Writing error");
+            System.exit(1);
         }
+    }
 
-        public static void exit(String[] arg) {
-            try {
-                DbMain.writerDateBase();
-            } catch (Exception e) {
-                System.err.println(e.getMessage());
+    public void get(String[] arg) throws IOException {
+        if (!isLoaded) {
+            isLoaded = true;
+            readerFile();
+        }
+        if (arg.length != 2) {
+            throw new IOException("get: Wrong number of arguments");
+        }
+        arg[1] = arg[1].trim();
+        arg = arg[1].split("\\s+");
+        if (arg.length != 1) {
+            throw new IOException("get: Wrong number of arguments");
+        }
+        if (fileMap.containsKey(arg[0])) {
+            System.out.println("found\n" + fileMap.get(arg[0]));
+        } else {
+            System.out.println("not found");
+        }
+    }
+
+    public void remove(String[] arg) throws  IOException {
+        if (!isLoaded) {
+            isLoaded = true;
+            readerFile();
+        }
+        if (arg.length != 2) {
+            throw new IOException("remove: Wrong number of arguments");
+        }
+        arg[1] = arg[1].trim();
+        arg = arg[1].split("\\s+");
+        if (arg.length != 1) {
+            throw new IOException("remove: Wrong number of arguments");
+        }
+        if (fileMap.containsKey(arg[0])) {
+            fileMap.remove(arg[0]);
+            System.out.println("removed");
+        } else {
+            System.out.println("not found");
+        }
+        try {
+            writerFile();
+        } catch (Exception e) {
+            System.err.println("Writing error");
+            System.exit(1);
+        }
+        try {
+            if (file.length() == 0) {
+                deleteEmptyFile();
+            }
+        } catch (Exception e) {
+            System.err.println("Unknown error");
+            System.exit(1);
+        }
+    }
+
+    public void exit(String[] arg) {
+        try {
+            writerFile();
+        } catch (Exception e) {
+            System.err.println(e.getMessage());
+            System.exit(1);
+        }
+        System.exit(0);
+    }
+
+    private void writerFile() throws Exception {
+        RandomAccessFile fileDateBase = null;
+        try {
+            fileDateBase = new RandomAccessFile(file, "rw");
+            fileDateBase.setLength(0);
+        } catch (Exception e) {
+            System.err.println("Unknown error");
+            System.exit(1);
+        }
+        try {
+            HashMap<String, Long> offsets = new HashMap<String, Long>();
+            long currentOffsetOfValue;
+            long offset = fileDateBase.getFilePointer();
+            for (String key: fileMap.keySet()) {
+                fileDateBase.write(key.getBytes("UTF8"));
+                fileDateBase.write("\0".getBytes());
+                offset = fileDateBase.getFilePointer();
+                offsets.put(key, offset);
+                fileDateBase.seek(fileDateBase.getFilePointer() + 4);
+                currentOffsetOfValue = fileDateBase.getFilePointer();
+            }
+
+            long currentPosition = 0;
+            for (String key: fileMap.keySet()) {
+                fileDateBase.write(fileMap.get(key).getBytes("UTF8")); // выписали значение
+                currentPosition  = fileDateBase.getFilePointer();
+                currentOffsetOfValue = currentPosition - fileMap.get(key).getBytes("UTF8").length;
+                fileDateBase.seek(offsets.get(key));
+                Integer lastOffsetInt = new Long(currentOffsetOfValue).intValue();
+                fileDateBase.writeInt(lastOffsetInt);
+                fileDateBase.seek(currentPosition);
+            }
+        } catch (Exception e) {
+            System.err.println("Unknown error");
+            fileDateBase.close();
+            System.exit(1);
+        }
+        fileDateBase.close();
+    }
+
+    private void deleteEmptyFile() {
+        if (!file.delete()) {
+            System.err.println("Deleting of file error");
+            System.exit(1);
+        }
+        isLoaded = false;
+        fileMap.clear();
+    }
+
+    void setAside() {
+        if (isLoaded) {
+            fileMap.clear();
+            isLoaded = false;
+        }
+    }
+
+    private void readerFile() {
+        RandomAccessFile dateBase = null;
+        try {
+            dateBase = new RandomAccessFile(file, "r");
+        } catch (FileNotFoundException e) {
+            return;
+        } catch (Exception e) {
+            System.err.println(file.toPath().toString() + ": Opening isn't possible");
+            System.exit(1);
+        }
+        try {
+            if (dateBase.length() == 0) {
+                dateBase.close();
+                deleteEmptyFile();
+                return;
+            }
+        } catch (Exception e) {
+            System.err.println("Unknown error");
+            System.exit(1);
+        }
+        try {
+            HashMap<Integer, String> offsetAndKeyMap = new HashMap<Integer, String>();
+            HashMap<String, Integer> keyAndValueLength = new HashMap<String, Integer>();
+            String key = readKey(dateBase);
+            byte b = key.getBytes()[0];
+            if (b < 0) {
+                b *= (-1);
+            }
+            if (id[0] != b % 16 && id[1] != b / 16 % 16) {
+                System.err.println("Illegal key in file " + file.toPath().toString());
+                dateBase.close();
                 System.exit(1);
             }
-            System.exit(0);
+            if (keyAndValueLength.containsKey(key)) {
+                System.err.println("Bad dates");
+                dateBase.close();
+                System.exit(1);
+            }
+            Integer offset = 0;
+            try {
+                offset = dateBase.readInt();
+            } catch (EOFException e) {
+                System.err.println("Bad file");
+                dateBase.close();
+                System.exit(1);
+            }
+            offsetAndKeyMap.put(offset, key);
+            final int firstOffset = offset;
+            try {
+                int lastOffset = offset;
+                String lastKey = null;
+                while (dateBase.getFilePointer() < firstOffset) {
+                    lastKey = key;
+                    key = readKey(dateBase);
+                    lastOffset = offset;
+                    offset = dateBase.readInt();
+                    offsetAndKeyMap.put(offset, key);
+                    keyAndValueLength.put(lastKey, offset - lastOffset);
+                    if (keyAndValueLength.containsKey(key)) {
+                        System.err.println("Bad dates");
+                        dateBase.close();
+                        System.exit(1);
+                    }
+                }
+                keyAndValueLength.put(key, (int) dateBase.length() - offset);
+            } catch (EOFException e) {
+                System.err.println("Bad file");
+                dateBase.close();
+                System.exit(1);
+            }
+            int lengthOfValue = 0;
+            try {
+                while (dateBase.getFilePointer() < dateBase.length()) {
+                    int currentOffset = (int) dateBase.getFilePointer();
+                    if (!offsetAndKeyMap.containsKey(currentOffset)) {
+                        System.err.println("Bad file");
+                        dateBase.close();
+                        System.exit(1);
+                    } else {
+                        key = offsetAndKeyMap.get(currentOffset);
+                        lengthOfValue = keyAndValueLength.get(key);
+                    }
+                    byte[] valueInBytes = new byte[lengthOfValue];
+                    for (int i = 0; i < lengthOfValue; ++i) {
+                        valueInBytes[i] = dateBase.readByte();
+                    }
+                    String value = new String(valueInBytes, "UTF8");
+                    fileMap.put(key, value);
+                }
+            } catch (EOFException e) {
+                System.err.println("Bad File");
+                dateBase.close();
+                System.exit(1);
+            }
+        } catch (Exception e) {
+            System.err.println("Unknown error");
+            try {
+                dateBase.close();
+            } catch (Exception e2) {
+                System.err.println("Unknown error");
+                System.exit(1);
+            }
+            System.exit(1);
         }
+        try {
+            dateBase.close();
+        } catch (Exception e) {
+            System.err.println("Unknown error");
+            System.exit(1);
+        }
+    }
+
+    private String readKey(RandomAccessFile dateBase) throws Exception {
+        Vector<Byte> keyBuilder = new Vector<Byte>();
+        try {
+            byte buf = dateBase.readByte();
+            while (buf != "\0".getBytes("UTF8")[0]) {
+                keyBuilder.add(buf);
+                buf = dateBase.readByte();
+            }
+        } catch (EOFException e) {
+            System.err.println("Bad file");
+            dateBase.close();
+            System.exit(1);
+        }
+        String key = null;
+        try {
+            byte[] keyInBytes = new byte[keyBuilder.size()];
+            for (int i = 0; i < keyBuilder.size(); ++i) {
+                keyInBytes[i] = keyBuilder.elementAt(i);
+            }
+            key = new String(keyInBytes, "UTF8");
+        } catch (Exception e) {
+            System.err.println("Reading Error");
+            dateBase.close();
+            System.exit(1);
+        }
+        return key;
+    }
 }
+
+
