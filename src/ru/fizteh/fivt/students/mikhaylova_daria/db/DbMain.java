@@ -93,17 +93,22 @@ public class DbMain {
         }
     }
 
+
     public void use(String[] command) throws Exception {
         if (command.length != 2) {
             throw new IOException("drop: Wrong number of arguments");
         }
-        String[] creater = new String[] {"create", command[1]};
-        create(creater);
         command[1] = command[1].trim();
         String correctName = mainDir.toPath().toAbsolutePath().normalize().resolve(command[1]).toString();
         File creatingTableFile = new File(correctName);
+        if (!creatingTableFile.exists()) {
+            System.out.println(creatingTableFile.getName() + " not exists");
+            currentTable = null;
+        }
         if (!bidDateBase.containsKey(command[1])) {
-            System.out.println(command[1] + " not exists");
+            String[] creater = new String[] {"create", command[1]};
+            create(creater);
+            currentTable = bidDateBase.get(command[1]);
         } else {
             currentTable = bidDateBase.get(command[1]);
             System.out.println("using " + command[1]);
