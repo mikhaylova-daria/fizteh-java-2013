@@ -32,6 +32,15 @@ public class DbMain {
             System.err.println(workingDirectoryName + " is not a directory");
             System.exit(1);
         }
+        try {
+            cleaner();
+        } catch (IOException e) {
+            System.err.println(e.getMessage());
+            System.exit(1);
+        } catch (Exception e) {
+            System.err.println("Unknown error");
+            System.exit(1);
+        }
 
         HashMap<String, String> commandsList = new HashMap<String, String>();
         commandsList.put("put", "put");
@@ -52,6 +61,45 @@ public class DbMain {
             System.exit(1);
         }
     }
+    private static void cleaner() throws Exception {
+        HashMap<String, Short> fileNames = new HashMap<String, Short>();
+        HashMap<String, Short> dirNames = new HashMap<String, Short>();
+        for (short i = 0; i < 16; ++i) {
+            fileNames.put(i + ".dat", i);
+            dirNames.put(i + ".dir", i);
+        }
+        File[] tables = mainDir.listFiles();
+        for (short i = 0; i < tables.length; ++i) {
+            if (tables[i].isFile()) {
+                throw new IOException(tables[i].toString() + " is not table");
+            }
+            File[] directories = tables[i].listFiles();
+            if (directories.length > 16) {
+                throw new IOException(tables[i].toString() + ": Wrong number of files in the table");
+            }
+            Short[] idFile = new Short[2];
+            for (short j = 0; j < directories.length; ++j) {
+                if (directories[j].isFile() || !dirNames.containsKey(directories[j].getName())) {
+                    throw new IOException(directories[j].toString() + " is not directory of table");
+                }
+                idFile[0] = dirNames.get(directories[j].getName());
+                File[] files = directories[j].listFiles();
+                if (files.length > 16) {
+                    throw new IOException(tables[i].toString() + ": " + directories[j].toString()
+                            + ": Wrong number of files in the table");
+                }
+                for (short g = 0; g < files.length; ++g) {
+                    if (files[g].isDirectory() || !fileNames.containsKey(files[g].getName())) {
+                        throw new IOException(files[g].toString() + " is not a file of Date Base table");
+                    }
+                    idFile[1] = fileNames.get(files[g].getName());
+                    FileMap currentFileMap = new FileMap(files[g].getCanonicalFile(), idFile);
+                    currentFileMap.readerFile();
+                    currentFileMap.setAside();
+                }
+            }
+        }
+    }
 
     public void create(String[] command) throws Exception {
         if (command.length != 2) {
@@ -60,7 +108,7 @@ public class DbMain {
         command[1] = command[1].trim();
         String correctName = mainDir.toPath().toAbsolutePath().normalize().resolve(command[1]).toString();
         File creatingTableFile = new File(correctName);
-        if (bidDateBase.containsKey(creatingTableFile.getName())) {
+        if (creatingTableFile.exists()) {
             System.out.println(command[1] + " exists");
         } else {
             TableDate creatingTable = new TableDate(creatingTableFile);
@@ -93,8 +141,6 @@ public class DbMain {
         }
     }
 
-
-
     public void use(String[] command) throws Exception {
         if (command.length != 2) {
             throw new IOException("drop: Wrong number of arguments");
@@ -106,14 +152,10 @@ public class DbMain {
             System.out.println(creatingTableFile.getName() + " not exists");
             currentTable = null;
         } else {
-            if (!bidDateBase.containsKey(command[1])) {
-                String[] creater = new String[] {"create", command[1]};
-                create(creater);
-                currentTable = bidDateBase.get(command[1]);
-            } else {
-                currentTable = bidDateBase.get(command[1]);
-                System.out.println("using " + command[1]);
-            }
+            TableDate creatingTable = new TableDate(creatingTableFile);
+            bidDateBase.put(command[1], creatingTable);
+            currentTable = bidDateBase.get(command[1]);
+            System.out.println("using " + command[1]);
         }
     }
 
@@ -169,12 +211,4 @@ public class DbMain {
          System.exit(0);
     }
 
-
-
 }
-
-
-
-
-
-
