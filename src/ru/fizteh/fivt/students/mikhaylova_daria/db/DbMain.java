@@ -97,6 +97,12 @@ public class DbMain {
                     currentFileMap.readerFile();
                     currentFileMap.setAside();
                 }
+                File[] checkOnEmpty = directories[j].listFiles();
+                if (checkOnEmpty.length == 0) {
+                    if (!directories[j].delete()) {
+                        throw new Exception(directories[j] + ": Deleting error");
+                    }
+                }
             }
         }
     }
@@ -212,3 +218,9 @@ public class DbMain {
     }
 
 }
+
+
+
+
+
+
