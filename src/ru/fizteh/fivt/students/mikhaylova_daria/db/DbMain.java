@@ -97,6 +97,8 @@ public class DbMain {
         if (command.length != 2) {
             throw new IOException("drop: Wrong number of arguments");
         }
+        String[] creater = new String[] {"create", command[1]};
+        create(creater);
         command[1] = command[1].trim();
         String correctName = mainDir.toPath().toAbsolutePath().normalize().resolve(command[1]).toString();
         File creatingTableFile = new File(correctName);
