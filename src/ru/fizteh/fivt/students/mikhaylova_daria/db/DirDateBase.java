@@ -8,6 +8,8 @@ public class DirDateBase {
 
     private Short id;
 
+    private boolean isReady = false;
+
     FileMap[] fileArray = new FileMap[16];
 
     DirDateBase() {
@@ -26,27 +28,71 @@ public class DirDateBase {
         }
     }
 
-    void startWorking() {
-        if (!dir.exists()) {
-            if (!dir.mkdir()) {
-                System.err.println(dir.toPath().toString() + ": Creating directory error");
-                System.exit(1);
+    void startWorking() throws Exception {
+        if (!isReady) {
+            if (!dir.exists()) {
+                if (!dir.mkdir()) {
+                    throw new Exception("Creating directory error");
+                }
             }
+            isReady = true;
         }
     }
 
-    void deleteEmptyDir() {
+    void deleteEmptyDir() throws Exception {
         File[] f = dir.listFiles();
         if (f != null) {
             if (f.length == 0) {
                 if (!dir.delete()) {
-                    System.err.println("Deleting directory error");
-                    System.exit(1);
+                    throw new Exception("Deleting directory error");
                 }
             }
         } else {
-            System.err.println("Internal error"); //не должна вылетать, потому что директория подаётся 100% существующая
+            throw new Exception("Internal error");
         }
+        isReady = false;
+    }
+
+    int countChanges() {
+        int numberOfChanges = 0;
+        for (int i = 0; i < 16; ++i) {
+            numberOfChanges += fileArray[i].numberOfChangesCounter();
+        }
+        return numberOfChanges;
+    }
+
+    int size() {
+        int numberOfKeys = 0;
+        for (int i = 0; i < 16; ++i) {
+            numberOfKeys += fileArray[i].size();
+        }
+        return numberOfKeys;
+    }
+
+    int commit() {
+        int numberOfChanges = 0;
+
+        for (int i = 0; i < 16; ++i) {
+            int changesInFile = fileArray[i].numberOfChangesCounter();
+            if (changesInFile != 0) {
+                try {
+                    startWorking();
+                } catch (Exception e) {
+                    throw new RuntimeException(e.getMessage(), e);
+                }
+                fileArray[i].commit();
+                numberOfChanges += changesInFile;
+            }
+        }
+        return numberOfChanges;
+    }
+
+    int rollback() {
+        int numberOfChanges = 0;
+        for (int i = 0; i < 16; ++i) {
+            numberOfChanges += fileArray[i].rollback();
+        }
+        return numberOfChanges;
     }
 
 }

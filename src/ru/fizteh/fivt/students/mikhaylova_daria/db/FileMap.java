@@ -2,14 +2,17 @@ package ru.fizteh.fivt.students.mikhaylova_daria.db;
 
 import java.io.*;
 import java.util.HashMap;
+import java.util.Set;
 import java.util.Vector;
 import java.util.zip.DataFormatException;
 
 public class FileMap {
-    HashMap<String, String> fileMap = new HashMap<String, String>();
-    File file;
-    Short[] id;
-    Boolean isLoaded;
+    private HashMap<String, String> fileMapInitial = new HashMap<String, String>();
+    private HashMap<String, String> fileMap = new HashMap<String, String>();
+    private File file;
+    private int size = 0;
+    private Short[] id;
+    Boolean isLoaded = false;
 
     FileMap() {
 
@@ -18,149 +21,122 @@ public class FileMap {
     FileMap(File file, Short[] id) {
         this.file = file;
         this.id = id;
-        isLoaded = false;
     }
 
-    public void put(String[] arg) throws IOException, DataFormatException {
+    public String put(String key, String value) {
+        if (key == null) {
+            throw new IllegalArgumentException("key is null");
+        }
+        if (value == null) {
+            throw new IllegalArgumentException("value is null");
+        }
         if (!isLoaded) {
-            isLoaded = true;
-            readerFile();
-        }
-        if (arg.length != 2) {
-            throw new IllegalArgumentException("put: Wrong number of arguments");
-        }
-        arg[1] = arg[1].trim();
-        arg = arg[1].split("\\s+", 2);
-        if (arg.length != 2) {
-            throw new IllegalArgumentException("put: Wrong number of arguments");
-        }
-        if (!fileMap.containsKey(arg[0])) {
-             System.out.println("new");
-        }
-        if (fileMap.containsKey(arg[0])) {
-            if (fileMap.containsKey(arg[0])) {
-                System.out.println("overwrite\n" + fileMap.get(arg[0]));
+            try {
+                readerFile();
+            } catch (IOException e) {
+                throw new RuntimeException("Reading error", e);
+            } catch (DataFormatException e) {
+                throw new RuntimeException("Bad data", e);
             }
         }
-        fileMap.put(arg[0], arg[1]);
-        try {
-            this.writerFile();
-        } catch (Exception e) {
-            throw new IOException("Writing error", e); //!!!!
-            //System.err.println();
-            //System.exit(1);
+        String overwritten = null;
+        if (fileMap.containsKey(key)) {
+            overwritten = fileMap.get(key);
         }
+        fileMap.put(key, value);
+        return overwritten;
     }
 
-    public void get(String[] arg) throws IOException, DataFormatException {
+    public String get(String key) throws IllegalArgumentException {
+        if (key == null) {
+            throw new IllegalArgumentException("key is null");
+        }
         if (!isLoaded) {
-            isLoaded = true;
-            readerFile();
+            try {
+                readerFile();
+            } catch (IOException e) {
+                throw new RuntimeException("Reading error", e);
+            } catch (DataFormatException e) {
+                throw new RuntimeException("Bad data", e);
+            }
         }
-        if (arg.length != 2) {
-            throw new IllegalArgumentException("get: Wrong number of arguments");
+        String value = null;
+        if (fileMap.containsKey(key)) {
+            value = fileMap.get(key);
         }
-        arg[1] = arg[1].trim();
-        arg = arg[1].split("\\s+");
-        if (arg.length != 1) {
-            throw new IllegalArgumentException("get: Wrong number of arguments");
-        }
-        if (fileMap.containsKey(arg[0])) {
-            System.out.println("found\n" + fileMap.get(arg[0]));
-        } else {
-            System.out.println("not found");
-        }
+        return value;
     }
 
-    public void remove(String[] arg) throws  IOException, DataFormatException {
+    public String remove(String key) throws IllegalArgumentException {
+        if (key == null) {
+            throw new IllegalArgumentException("key is null");
+        }
         if (!isLoaded) {
-            isLoaded = true;
-            readerFile();
+            try {
+                readerFile();
+            } catch (IOException e) {
+                throw new RuntimeException("Reading error", e);
+            } catch (DataFormatException e) {
+                throw new RuntimeException("Bad data", e);
+            }
         }
-        if (arg.length != 2) {
-            throw new IllegalArgumentException("remove: Wrong number of arguments");
+        String value = null;
+        if (fileMap.containsKey(key)) {
+            value = fileMap.get(key);
+            fileMap.remove(key);
         }
-        arg[1] = arg[1].trim();
-        arg = arg[1].split("\\s+");
-        if (arg.length != 1) {
-            throw new IllegalArgumentException("remove: Wrong number of arguments");
-        }
-        if (fileMap.containsKey(arg[0])) {
-            fileMap.remove(arg[0]);
-            System.out.println("removed");
-        } else {
-            System.out.println("not found");
-        }
-        try {
-            writerFile();
-        } catch (Exception e) {
-            throw new IOException("Writing error", e);//!!!!!!
-            //System.err.println("Writing error");
-            //System.exit(1);
-        }
-        if (file.length() == 0) {
-            deleteEmptyFile();
-        }
-    }
-
-    public void exit(String[] arg) throws IOException { ///??? что с этим делать?
-        try {
-            writerFile();
-        } catch (Exception e) {
-            throw new IOException("Writing error", e);//!!!!!!
-            //System.err.println(e.getMessage());
-            //System.exit(1);
-        }
-        System.exit(0);
+        return value;
     }
 
     private void writerFile() throws IOException {
         RandomAccessFile fileDateBase = null;
-        try {
-            fileDateBase = new RandomAccessFile(file, "rw");
-            fileDateBase.setLength(0);
-        } catch (Exception e) {
-            throw new IOException("Writing error", e);//!!!!!!
-            //System.err.println("Unknown error");
-            //System.exit(1);
-        }
-        try {
-            HashMap<String, Long> offsets = new HashMap<String, Long>();
-            long currentOffsetOfValue;
-            long offset = fileDateBase.getFilePointer();
-            for (String key: fileMap.keySet()) {
-                fileDateBase.write(key.getBytes("UTF8"));
-                fileDateBase.write("\0".getBytes());
-                offset = fileDateBase.getFilePointer();
-                offsets.put(key, offset);
-                fileDateBase.seek(fileDateBase.getFilePointer() + 4);
-                currentOffsetOfValue = fileDateBase.getFilePointer();
+        if (isLoaded) {
+            try {
+                fileDateBase = new RandomAccessFile(file, "rw");
+                fileDateBase.setLength(0);
+            } catch (Exception e) {
+                throw new IOException("Writing error", e);
             }
+            try {
+                HashMap<String, Long> offsets = new HashMap<String, Long>();
+                long currentOffsetOfValue;
+                long offset = fileDateBase.getFilePointer();
+                for (String key: fileMap.keySet()) {
+                    fileDateBase.write(key.getBytes("UTF8"));
+                    fileDateBase.write("\0".getBytes());
+                    offset = fileDateBase.getFilePointer();
+                    offsets.put(key, offset);
+                    fileDateBase.seek(fileDateBase.getFilePointer() + 4);
+                    currentOffsetOfValue = fileDateBase.getFilePointer();
+                }
 
-            long currentPosition = 0;
-            for (String key: fileMap.keySet()) {
-                fileDateBase.write(fileMap.get(key).getBytes("UTF8")); // выписали значение
-                currentPosition  = fileDateBase.getFilePointer();
-                currentOffsetOfValue = currentPosition - fileMap.get(key).getBytes("UTF8").length;
-                fileDateBase.seek(offsets.get(key));
-                Integer lastOffsetInt = new Long(currentOffsetOfValue).intValue();
-                fileDateBase.writeInt(lastOffsetInt);
-                fileDateBase.seek(currentPosition);
+                long currentPosition = 0;
+                for (String key: fileMap.keySet()) {
+                    fileDateBase.write(fileMap.get(key).getBytes("UTF8")); // выписали значение
+                    currentPosition  = fileDateBase.getFilePointer();
+                    currentOffsetOfValue = currentPosition - fileMap.get(key).getBytes("UTF8").length;
+                    fileDateBase.seek(offsets.get(key));
+                    Integer lastOffsetInt = new Long(currentOffsetOfValue).intValue();
+                    fileDateBase.writeInt(lastOffsetInt);
+                    fileDateBase.seek(currentPosition);
+                }
+            } catch (Exception e) {
+                fileDateBase.close();
+                throw new IOException("Writing error", e);
             }
-        } catch (Exception e) {
-            //System.err.println("Unknown error");
             fileDateBase.close();
-            throw new IOException("Writing error", e);//!!!!!!
-            //System.exit(1);
+            if (file.length() == 0) {
+                deleteEmptyFile();
+            }
+            size = fileMap.size();
         }
-        fileDateBase.close();
+        fileMapInitial.clear();
+        for (String key: fileMap.keySet()) {
+            fileMapInitial.put(key, fileMap.get(key));
+        }
     }
 
     private boolean deleteEmptyFile() {
-        //if (!file.delete()) {
-            //System.err.println("Deleting of file error");
-            //System.exit(1);
-        //}
         isLoaded = false;
         fileMap.clear();
         return file.delete();
@@ -169,20 +145,19 @@ public class FileMap {
     void setAside() {
         if (isLoaded) {
             fileMap.clear();
+            fileMapInitial.clear();
             isLoaded = false;
         }
     }
 
     void readerFile() throws IOException, DataFormatException {
-        RandomAccessFile dateBase = null;
+        RandomAccessFile dateBase;
         try {
             dateBase = new RandomAccessFile(file, "r");
         } catch (FileNotFoundException e) {
             return;
         } catch (Exception e) {
-            throw new IOException(file.getName() + ": Reading error", e);//!!!!!!
-            //System.err.println(file.toPath().toString() + ": Opening isn't possible");
-            //System.exit(1);
+            throw new IOException(file.getName() + ": Reading error", e);
         }
         try {
             if (dateBase.length() == 0) {
@@ -191,9 +166,7 @@ public class FileMap {
                 return;
             }
         } catch (Exception e) {
-            throw new IOException(file.getName() + ": Reading error", e);//!!!!!!
-            //System.err.println("Unknown error");
-            //System.exit(1);
+            throw new IOException(file.getName() + ": Reading error", e);
         }
         try {
             HashMap<Integer, String> offsetAndKeyMap = new HashMap<Integer, String>();
@@ -217,16 +190,14 @@ public class FileMap {
             try {
                 offset = dateBase.readInt();
             } catch (EOFException e) {
-                //System.err.println("Bad file");
                 dateBase.close();
-                throw new DataFormatException(file.getName());//!!!!!!
-                //System.exit(1);
+                throw new DataFormatException(file.getName());
             }
             offsetAndKeyMap.put(offset, key);
             final int firstOffset = offset;
             try {
                 int lastOffset = offset;
-                String lastKey = null;
+                String lastKey;
                 while (dateBase.getFilePointer() < firstOffset) {
                     lastKey = key;
                     key = readKey(dateBase);
@@ -235,18 +206,14 @@ public class FileMap {
                     offsetAndKeyMap.put(offset, key);
                     keyAndValueLength.put(lastKey, offset - lastOffset);
                     if (keyAndValueLength.containsKey(key)) {
-                      //  System.err.println("Bad dates");
                         dateBase.close();
-                        throw new DataFormatException(file.getName() +": " + key +": The key is already contained");//!!
-                       // System.exit(1);
+                        throw new DataFormatException(file.getName() +": " + key +": The key is already contained");
                     }
                 }
                 keyAndValueLength.put(key, (int) dateBase.length() - offset);
             } catch (EOFException e) {
-                //System.err.println("Bad file");
                 dateBase.close();
-                throw new DataFormatException(file.getName());//!!!!!!
-                //System.exit(1);
+                throw new DataFormatException(file.getName());
             }
             int lengthOfValue = 0;
             try {
@@ -268,30 +235,28 @@ public class FileMap {
                     fileMap.put(key, value);
                 }
             } catch (EOFException e) {
-               // System.err.println("Bad File");
                 dateBase.close();
-                throw new DataFormatException(file.getName());//!!!!!!
-                //System.exit(1);
+                throw new DataFormatException(file.getName());
             }
         } catch (Exception e) {
-            //System.err.println("Unknown error");
             try {
                 dateBase.close();
             } catch (Exception e2) {
-                throw new IOException(file.getName(), e2);//!!!!!!
-                //System.err.println("Unknown error");
-               // System.exit(1);
+                throw new IOException(file.getName(), e2);
             }
-            throw new IOException(file.getName(), e); //!!!!!!
-            //System.exit(1);
+            throw new IOException(file.getName(), e);
         }
         try {
             dateBase.close();
         } catch (Exception e) {
-            throw new IOException(file.getName(), e);//!!!!!!!
-            //System.err.println("Unknown error");
-            //System.exit(1);
+            throw new IOException(file.getName(), e);
         }
+        fileMapInitial.clear();
+        for (String key: fileMap.keySet()) {
+            fileMapInitial.put(key, fileMap.get(key));
+        }
+        size = fileMap.size();
+        isLoaded = true;
     }
 
     private String readKey(RandomAccessFile dateBase) throws IOException, DataFormatException {
@@ -303,10 +268,8 @@ public class FileMap {
                 buf = dateBase.readByte();
             }
         } catch (EOFException e) {
-            //System.err.println("Bad file");
             dateBase.close();
-            throw new DataFormatException(file.getName());//!!!
-            //System.exit(1);
+            throw new DataFormatException(file.getName());
         }
         String key = null;
         try {
@@ -316,13 +279,68 @@ public class FileMap {
             }
             key = new String(keyInBytes, "UTF8");
         } catch (Exception e) {
-            //System.err.println("Reading Error");
             dateBase.close();
             throw  new IOException(file.getName(), e);
-            //System.exit(1);
         }
         return key;
     }
+
+    int numberOfChangesCounter() {
+        int numberOfChanges = 0;
+        Set<String> newKeys = fileMap.keySet();
+        Set<String> oldKeys = fileMapInitial.keySet();
+        for (String key: newKeys) {
+            if (oldKeys.contains(key)) {
+                if (!fileMap.get(key).equals(fileMapInitial.get(key))) {
+                    ++numberOfChanges;
+                }
+            } else {
+                ++numberOfChanges;
+            }
+        }
+        for (String key: oldKeys) {
+            if (!newKeys.contains(key)) {
+                ++numberOfChanges;
+            }
+        }
+        return numberOfChanges;
+    }
+
+
+    void commit() {
+        int numberOfChanges = numberOfChangesCounter();
+        if (numberOfChanges !=0) {
+            if (isLoaded) {
+                try {
+                    writerFile();
+                } catch(IOException e) {
+                    e.printStackTrace();
+                    throw new RuntimeException("Writing error", e);
+                }
+            }
+        }
+    }
+
+    int rollback() {
+        int numberOfChanges = numberOfChangesCounter();
+        fileMap.clear();
+        for (String key: fileMapInitial.keySet()) {
+            fileMap.put(key, fileMapInitial.get(key));
+        }
+        return numberOfChanges;
+    }
+
+    int size() {
+        if (!isLoaded) {
+            try {
+                readerFile();
+            } catch (IOException e) {
+                throw  new RuntimeException("reading error", e);
+            } catch (DataFormatException e) {
+                throw new RuntimeException("Bad dates", e);
+            }
+        }
+        return size;
+    }
+
 }
-
-

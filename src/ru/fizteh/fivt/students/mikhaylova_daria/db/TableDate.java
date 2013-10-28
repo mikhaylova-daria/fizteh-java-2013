@@ -2,84 +2,111 @@ package ru.fizteh.fivt.students.mikhaylova_daria.db;
 
 
 import java.io.File;
-import java.io.IOException;
+import ru.fizteh.fivt.storage.strings.*;
 
-public class TableDate {
+public class TableDate implements Table {
+
     File tableFile;
     DirDateBase[] dirArray = new DirDateBase[16];
+
     TableDate(File tableFile) {
         this.tableFile = tableFile;
         if (!tableFile.exists()) {
             if (!tableFile.mkdir()) {
-                System.err.println("Unknown error");
-                System.exit(1);
-            } else {
-                System.out.println("created");
+                tableFile = null;
             }
         }
-        for (short i = 0; i < 16; ++i) {
-            File dir = new File(tableFile.toPath().resolve(i + ".dir").toString());
-            dirArray[i] = new DirDateBase(dir, i);
+        if (tableFile != null) {
+            for (short i = 0; i < 16; ++i) {
+                File dir = new File(tableFile.toPath().resolve(i + ".dir").toString());
+                dirArray[i] = new DirDateBase(dir, i);
+            }
         }
     }
 
-    void put(String[] command) throws Exception {
-        if (command.length != 2) {
-            throw new IOException("put: Wrong number of arguments");
-        }
-        command[1] = command[1].trim();
-        String[] arg = command[1].split("\\s+", 2);
-        if (arg.length != 2) {
-            throw new IOException("put: Wrong number of arguments");
-        }
-        byte b = arg[0].getBytes()[0];
+    public String getName() {
+        return tableFile.getName();
+    }
+
+    public String put(String key, String value) throws IllegalArgumentException {
+        byte b = key.getBytes()[0];
         if (b < 0) {
             b *= (-1);
         }
         int nDirectory = b % 16;
         int nFile = (b / 16) % 16;
-        dirArray[nDirectory].startWorking();
-        dirArray[nDirectory].fileArray[nFile].put(command);
+        return dirArray[nDirectory].fileArray[nFile].put(key, value);
     }
 
-    void remove(String[] command) throws Exception {
-        if (command.length != 2) {
-            throw new IOException("remove: Wrong number of arguments");
-        }
-        command[1] = command[1].trim();
-        String[] arg = command[1].split("\\s+");
-        if (arg.length != 1) {
-            throw new IOException("remove: Wrong number of arguments");
-        }
-        byte b = arg[0].getBytes()[0];
+    public String remove(String key) throws IllegalArgumentException {
+        byte b = key.getBytes()[0];
         if (b < 0) {
             b *= (-1);
         }
         int nDirectory = b % 16;
         int nFile = b / 16 % 16;
-        dirArray[nDirectory].startWorking();
-        dirArray[nDirectory].fileArray[nFile].remove(command);
-        dirArray[nDirectory].deleteEmptyDir();
+        String removedValue;
+        try {
+            dirArray[nDirectory].startWorking();
+            removedValue = dirArray[nDirectory].fileArray[nFile].remove(key);
+            dirArray[nDirectory].deleteEmptyDir();
+        } catch (Exception e) {
+            throw new RuntimeException(e.getMessage(), e);
+        }
+        return removedValue;
     }
 
-    void get(String[] command) throws Exception {
-        if (command.length != 2) {
-            throw new IOException("get: Wrong number of arguments");
+    public String get(String key) throws IllegalArgumentException {
+        if (key == null) {
+            throw new IllegalArgumentException("key is null");
         }
-        command[1] = command[1].trim();
-        String[] arg = command[1].split("\\s+");
-        if (arg.length != 1) {
-            throw new IOException("get: Wrong number of arguments");
-        }
-        byte b = arg[0].getBytes()[0];
+        byte b = key.getBytes()[0];
         if (b < 0) {
             b *= (-1);
         }
         int nDirectory = b % 16;
         int nFile = (b / 16) % 16;
-        dirArray[nDirectory].startWorking();
-        dirArray[nDirectory].fileArray[nFile].get(command);
-        dirArray[nDirectory].deleteEmptyDir();
+        String getValue;
+        try {
+            dirArray[nDirectory].startWorking();
+            getValue = dirArray[nDirectory].fileArray[nFile].get(key);
+            dirArray[nDirectory].deleteEmptyDir();
+        } catch (Exception e) {
+            throw new RuntimeException(e.getMessage(), e);
+        }
+        return getValue;
+    }
+
+    int countChanges() {
+        int numberOfChanges = 0;
+        for (int i = 0; i < 16; ++i) {
+            numberOfChanges += dirArray[i].countChanges();
+        }
+        return numberOfChanges;
+    }
+
+    public int size() {
+        int numberOfKeys = 0;
+        for (int i = 0; i < 16; ++i) {
+            numberOfKeys += dirArray[i].size();
+        }
+        return numberOfKeys;
+    }
+
+    public int commit() {
+        int numberOfChanges = 0;
+        for (int i = 0; i < 16; ++i) {
+            numberOfChanges += dirArray[i].commit();
+        }
+        return numberOfChanges;
+    }
+
+    public int rollback() {
+        int numberOfChanges = 0;
+        for (int i = 0; i < 16; ++i) {
+            numberOfChanges += dirArray[i].rollback();
+        }
+        return numberOfChanges;
     }
 
 }
