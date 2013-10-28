@@ -166,6 +166,7 @@ public class DbMain {
         if (value == null) {
             System.out.println("not found");
         } else {
+            System.out.println("found");
             System.out.println(value);
         }
     }
