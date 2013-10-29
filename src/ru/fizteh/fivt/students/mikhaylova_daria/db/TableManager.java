@@ -124,7 +124,6 @@ public class TableManager implements TableProvider {
                     creatingTableFile.toPath().toString()
             };
             Shell.main(argShell);
-            System.out.println("dropped");
             bidDateBase.remove(nameTable);
         }
     }

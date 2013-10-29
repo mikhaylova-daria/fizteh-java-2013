@@ -90,7 +90,6 @@ public class FileMap {
 
     private void writerFile() throws IOException {
         RandomAccessFile fileDateBase = null;
-        if (isLoaded) {
             try {
                 fileDateBase = new RandomAccessFile(file, "rw");
                 fileDateBase.setLength(0);
@@ -129,7 +128,6 @@ public class FileMap {
                 deleteEmptyFile();
             }
             size = fileMap.size();
-        }
         fileMapInitial.clear();
         for (String key: fileMap.keySet()) {
             fileMapInitial.put(key, fileMap.get(key));
@@ -310,14 +308,12 @@ public class FileMap {
     void commit() {
         int numberOfChanges = numberOfChangesCounter();
         if (numberOfChanges !=0) {
-            if (isLoaded) {
                 try {
                     writerFile();
                 } catch(IOException e) {
                     e.printStackTrace();
                     throw new RuntimeException("Writing error", e);
                 }
-            }
         }
     }
 
