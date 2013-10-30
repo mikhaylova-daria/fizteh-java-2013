@@ -79,7 +79,13 @@ public class TableManager implements TableProvider {
             throw new IllegalArgumentException("nameTable is null");
         }
         String correctName = mainDir.toPath().toAbsolutePath().normalize().resolve(nameTable).toString();
+        if (!(correctName.startsWith(mainDir.toPath().toString()) || correctName.equals(mainDir.getAbsolutePath()))) {
+             throw new RuntimeException("This directory is not subfolder of working directory");
+        }
         File creatingTableFile = new File(correctName);
+        if (!creatingTableFile.isDirectory()) {
+            throw new RuntimeException(correctName + "is not directory");
+        }
         TableDate creatingTable = null;
         if (!creatingTableFile.exists()) {
             creatingTable = new TableDate(creatingTableFile);
