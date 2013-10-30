@@ -32,6 +32,9 @@ public class TableDate implements Table {
         if (key == null) {
             throw new IllegalArgumentException("key is null");
         }
+        if (value == null) {
+            throw new IllegalArgumentException("value is null");
+        }
         byte b = key.getBytes()[0];
         if (b < 0) {
             b *= (-1);
