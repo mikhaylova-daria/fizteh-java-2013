@@ -45,7 +45,7 @@ public class TableDate implements Table {
     }
 
     public String remove(String key) throws IllegalArgumentException {
-        if (key == null) {
+        if (key == null || key.isEmpty()) {
             throw new IllegalArgumentException("key is null");
         }
         byte b = key.getBytes()[0];
@@ -66,7 +66,7 @@ public class TableDate implements Table {
     }
 
     public String get(String key) throws IllegalArgumentException {
-        if (key == null) {
+        if (key == null || key.isEmpty()) {
             throw new IllegalArgumentException("key is null");
         }
         byte b = key.getBytes()[0];
