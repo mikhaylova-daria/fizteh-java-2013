@@ -83,12 +83,12 @@ public class TableManager implements TableProvider {
              throw new RuntimeException("This directory is not subfolder of working directory");
         }
         File creatingTableFile = new File(correctName);
-      //  if (!creatingTableFile.isDirectory()) {
-    //        throw new RuntimeException(correctName + "is not directory");
-  //      }
         TableDate creatingTable = null;
         if (!creatingTableFile.exists()) {
             creatingTable = new TableDate(creatingTableFile);
+            if (!creatingTableFile.isDirectory()) {
+                throw new RuntimeException(correctName + "is not directory");
+            }
             if (!bidDateBase.containsKey(nameTable)) {
                 bidDateBase.put(nameTable, creatingTable);
             }
