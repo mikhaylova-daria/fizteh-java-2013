@@ -24,11 +24,19 @@ public class FileMap {
     }
 
     public String put(String key, String value) {
-        if (key == null || key.isEmpty()) {
+        if (key == null) {
             throw new IllegalArgumentException("key is null");
         }
-        if (value == null || value.isEmpty()) {
+        key = key.trim();
+        if (key.isEmpty()) {
+            throw new IllegalArgumentException("key is empty");
+        }
+        if (value == null) {
             throw new IllegalArgumentException("value is null");
+        }
+        value = value.trim();
+        if (value.isEmpty()) {
+            throw new IllegalArgumentException("value is empty");
         }
         if (!isLoaded) {
             try {
@@ -51,6 +59,10 @@ public class FileMap {
         if (key == null) {
             throw new IllegalArgumentException("key is null");
         }
+        key = key.trim();
+        if (key.isEmpty()) {
+            throw new IllegalArgumentException("key is empty");
+        }
         if (!isLoaded) {
             try {
                 readerFile();
@@ -70,6 +82,10 @@ public class FileMap {
     public String remove(String key) throws IllegalArgumentException {
         if (key == null) {
             throw new IllegalArgumentException("key is null");
+        }
+        key = key.trim();
+        if (key.isEmpty()) {
+            throw new IllegalArgumentException("key is empty");
         }
         if (!isLoaded) {
             try {

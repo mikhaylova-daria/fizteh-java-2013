@@ -29,11 +29,19 @@ public class TableDate implements Table {
     }
 
     public String put(String key, String value) throws IllegalArgumentException {
-        if (key == null || key.isEmpty()) {
+        if (key == null) {
             throw new IllegalArgumentException("key is null");
         }
-        if (value == null || value.isEmpty()) {
+        key = key.trim();
+        if (key.isEmpty()) {
+            throw new IllegalArgumentException("key is null");
+        }
+        if (value == null) {
             throw new IllegalArgumentException("value is null");
+        }
+        value = value.trim();
+        if (value.isEmpty()) {
+            throw new IllegalArgumentException("value is empty");
         }
         byte b = key.getBytes()[0];
         if (b < 0) {
@@ -45,8 +53,12 @@ public class TableDate implements Table {
     }
 
     public String remove(String key) throws IllegalArgumentException {
-        if (key == null || key.isEmpty()) {
+        if (key == null) {
             throw new IllegalArgumentException("key is null");
+        }
+        key = key.trim();
+        if (key.isEmpty()) {
+            throw new IllegalArgumentException("key is empty");
         }
         byte b = key.getBytes()[0];
         if (b < 0) {
@@ -66,8 +78,12 @@ public class TableDate implements Table {
     }
 
     public String get(String key) throws IllegalArgumentException {
-        if (key == null || key.isEmpty()) {
+        if (key == null) {
             throw new IllegalArgumentException("key is null");
+        }
+        key = key.trim();
+        if (key.isEmpty()) {
+            throw new IllegalArgumentException("key is empty");
         }
         byte b = key.getBytes()[0];
         if (b < 0) {
