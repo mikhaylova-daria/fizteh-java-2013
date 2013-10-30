@@ -81,6 +81,9 @@ public class TableManager implements TableProvider {
         if (nameTable.isEmpty()) {
             throw new IllegalArgumentException("nameTable is empty");
         }
+        if (nameTable.contains("\\") || nameTable.contains("/")) {
+            throw new IllegalArgumentException("bad symbol in tablename");
+        }
         String correctName = mainDir.toPath().toAbsolutePath().normalize().resolve(nameTable).toString();
         if (!(correctName.startsWith(mainDir.toPath().toString()) || correctName.equals(mainDir.getAbsolutePath()))) {
              throw new RuntimeException("This directory is not subfolder of working directory");
@@ -105,6 +108,9 @@ public class TableManager implements TableProvider {
         }
         if (nameTable.isEmpty()) {
             throw new IllegalArgumentException("nameTable is empty");
+        }
+        if (nameTable.contains("\\") || nameTable.contains("/")) {
+            throw new IllegalArgumentException("bad symbol in tablename");
         }
         TableDate table = null;
         String correctName = mainDir.toPath().toAbsolutePath().normalize().resolve(nameTable).toString();
