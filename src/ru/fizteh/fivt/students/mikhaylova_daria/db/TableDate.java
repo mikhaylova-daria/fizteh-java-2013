@@ -29,6 +29,9 @@ public class TableDate implements Table {
     }
 
     public String put(String key, String value) throws IllegalArgumentException {
+        if (key == null) {
+            throw new IllegalArgumentException("key is null");
+        }
         byte b = key.getBytes()[0];
         if (b < 0) {
             b *= (-1);
@@ -39,6 +42,9 @@ public class TableDate implements Table {
     }
 
     public String remove(String key) throws IllegalArgumentException {
+        if (key == null) {
+            throw new IllegalArgumentException("key is null");
+        }
         byte b = key.getBytes()[0];
         if (b < 0) {
             b *= (-1);
