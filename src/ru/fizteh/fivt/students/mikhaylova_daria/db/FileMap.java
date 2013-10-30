@@ -24,10 +24,10 @@ public class FileMap {
     }
 
     public String put(String key, String value) {
-        if (key == null) {
+        if (key == null || key.isEmpty()) {
             throw new IllegalArgumentException("key is null");
         }
-        if (value == null) {
+        if (value == null || value.isEmpty()) {
             throw new IllegalArgumentException("value is null");
         }
         if (!isLoaded) {

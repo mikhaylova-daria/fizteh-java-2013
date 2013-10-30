@@ -78,6 +78,9 @@ public class TableManager implements TableProvider {
         if (nameTable == null) {
             throw new IllegalArgumentException("nameTable is null");
         }
+        if (nameTable.isEmpty()) {
+            throw new IllegalArgumentException("nameTable is empty");
+        }
         String correctName = mainDir.toPath().toAbsolutePath().normalize().resolve(nameTable).toString();
         if (!(correctName.startsWith(mainDir.toPath().toString()) || correctName.equals(mainDir.getAbsolutePath()))) {
              throw new RuntimeException("This directory is not subfolder of working directory");
@@ -100,6 +103,9 @@ public class TableManager implements TableProvider {
         if (nameTable == null) {
             throw new IllegalArgumentException();
         }
+        if (nameTable.isEmpty()) {
+            throw new IllegalArgumentException("nameTable is empty");
+        }
         TableDate table = null;
         String correctName = mainDir.toPath().toAbsolutePath().normalize().resolve(nameTable).toString();
         File creatingTableFile = new File(correctName);
@@ -119,6 +125,9 @@ public class TableManager implements TableProvider {
     public void removeTable(String nameTable) throws IllegalArgumentException, IllegalStateException {
         if (nameTable == null) {
             throw new IllegalArgumentException("nameTable is null");
+        }
+        if (nameTable.isEmpty()) {
+            throw new IllegalArgumentException("nameTable is empty");
         }
         String correctName = mainDir.toPath().toAbsolutePath().normalize().resolve(nameTable).toString();
         File creatingTableFile = new File(correctName);
