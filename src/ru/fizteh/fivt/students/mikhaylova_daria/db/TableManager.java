@@ -84,10 +84,10 @@ public class TableManager implements TableProvider {
         if (nameTable.contains("\\") || nameTable.contains("/")) {
             throw new IllegalArgumentException("bad symbol in tablename");
         }
-        String correctName = mainDir.toPath().toAbsolutePath().normalize().resolve(nameTable).toString();
-        if (!(correctName.startsWith(mainDir.toPath().toString()) || correctName.equals(mainDir.getAbsolutePath()))) {
-             throw new RuntimeException("This directory is not subfolder of working directory");
+        if (nameTable.startsWith(".") || (nameTable.endsWith("."))) {
+            throw new IllegalArgumentException("bad symbol in tablename");
         }
+        String correctName = mainDir.toPath().toAbsolutePath().normalize().resolve(nameTable).toString();
         File creatingTableFile = new File(correctName);
         TableDate creatingTable = null;
         if (!creatingTableFile.exists()) {
@@ -136,6 +136,10 @@ public class TableManager implements TableProvider {
             throw new IllegalArgumentException("nameTable is empty");
         }
         if (nameTable.contains("\\") || nameTable.contains("/")) {
+            throw new IllegalArgumentException("bad symbol in tablename");
+        }
+
+        if (nameTable.startsWith(".") || (nameTable.endsWith("."))) {
             throw new IllegalArgumentException("bad symbol in tablename");
         }
         String correctName = mainDir.toPath().toAbsolutePath().normalize().resolve(nameTable).toString();
