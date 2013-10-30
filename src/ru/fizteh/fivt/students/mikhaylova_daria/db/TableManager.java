@@ -130,7 +130,7 @@ public class TableManager implements TableProvider {
             throw new IllegalArgumentException("nameTable is empty");
         }
         if (nameTable.contains("\\") || nameTable.contains("/")) {
-            throw new IllegalArgumentException("bad symbol in tablename")
+            throw new IllegalArgumentException("bad symbol in tablename");
         }
         String correctName = mainDir.toPath().toAbsolutePath().normalize().resolve(nameTable).toString();
         File creatingTableFile = new File(correctName);
