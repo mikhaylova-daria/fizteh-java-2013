@@ -29,10 +29,10 @@ public class TableDate implements Table {
     }
 
     public String put(String key, String value) throws IllegalArgumentException {
-        if (key == null) {
+        if (key == null || key.equals("")) {
             throw new IllegalArgumentException("key is null");
         }
-        if (value == null) {
+        if (value == null || value.equals("")) {
             throw new IllegalArgumentException("value is null");
         }
         byte b = key.getBytes()[0];
