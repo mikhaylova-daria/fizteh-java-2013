@@ -31,6 +31,7 @@ public class DbMain {
         commandsList.put("drop", "drop");
         commandsList.put("commit", "commit");
         commandsList.put("rollback", "rollback");
+        commandsList.put("size", "size");
 
         try {
             try {
@@ -185,18 +186,38 @@ public class DbMain {
     }
 
     public static void commit(String[] arg) {
-        if (currentTable == null) {
-            System.out.println("no table");
+        if (arg.length != 0) {
+            if (currentTable == null) {
+                System.out.println("no table");
+            } else {
+                System.out.println(currentTable.commit());
+            }
         } else {
-            System.out.println(currentTable.commit());
+            throw new IllegalArgumentException("Wrong number of arguments");
         }
     }
 
     public static void rollback(String[] arg) {
-        if (currentTable == null) {
-            System.out.println("no table");
+        if (arg.length != 0) {
+            if (currentTable == null) {
+                System.out.println("no table");
+            } else {
+                System.out.println(currentTable.rollback());
+            }
         } else {
-            System.out.println(currentTable.rollback());
+            throw new IllegalArgumentException("Wrong number of arguments");
+        }
+    }
+
+    public static void size(String[] arg) {
+        if (arg.length != 0) {
+            if (currentTable != null) {
+                System.out.println(currentTable.size());
+            } else {
+                System.out.println("no table");
+            }
+        } else {
+            throw new IllegalArgumentException("Wrong number of arguments");
         }
     }
 

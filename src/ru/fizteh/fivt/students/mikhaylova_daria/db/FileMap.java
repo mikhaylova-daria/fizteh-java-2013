@@ -352,7 +352,7 @@ public class FileMap {
                 throw new RuntimeException("Bad dates", e);
             }
         }
-        return size;
+        return fileMap.size();
     }
 
 }
