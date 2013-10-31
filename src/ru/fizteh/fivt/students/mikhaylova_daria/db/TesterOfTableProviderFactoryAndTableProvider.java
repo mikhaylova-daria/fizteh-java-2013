@@ -1,9 +1,10 @@
 package ru.fizteh.fivt.students.mikhaylova_daria.db;
 
 
-import org.junit.Before;
+import org.junit.*;
 import ru.fizteh.fivt.storage.strings.*;
-import org.junit.Test;
+import ru.fizteh.fivt.students.mikhaylova_daria.shell.Shell;
+
 import static org.junit.Assert.*;
 import static org.junit.Assert.assertNull;
 
@@ -11,25 +12,33 @@ import java.io.File;
 
 public class TesterOfTableProviderFactoryAndTableProvider {
 
-    private String workingDir = "/home/darya/db";
-    private TableProviderFactory factory = new TableManagerFactory();
-    private TableProvider manager;
+    private static String workingDir;
+    private static TableProviderFactory factory;
+    private static TableProvider manager;
+    private static File existingFile;
+    private static File workingDirFile;
 
-    @Before
-    public void setup() throws Exception {
-        if (workingDir == null) {
-            throw new IllegalArgumentException("Property is null");
-        }
+    @BeforeClass
+    public  static void beforeClass() throws Exception {
+        factory = new TableManagerFactory();
+        File tempDb = File.createTempFile("darya", "mikhailova");
+        workingDir = tempDb.getName();
+        tempDb.mkdir();
+        tempDb.delete();
+        workingDirFile = new File(workingDir);
+        workingDirFile.mkdir();
         try {
             manager = factory.create(workingDir);
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Bad property");
+            e.printStackTrace();
+            throw new IllegalArgumentException("Bad directory");
         }
-        File workingDirFile = new File(workingDir);
-        File existingFile = new File(workingDirFile.toPath().normalize().resolve("existing").toString());
+        File temp = File.createTempFile("darya", "mikhailova");
+        String name = temp.getName();
+        temp.delete();
+        existingFile = new File (workingDirFile.toPath().normalize().resolve(name).toString());
         existingFile.mkdir();
     }
-
 
     @Test(expected = IllegalArgumentException.class)
     public void createTableManagerByNullStringShouldFail() {
@@ -67,8 +76,9 @@ public class TesterOfTableProviderFactoryAndTableProvider {
     }
 
     @Test
-    public void createExistingTableReturnNull() {
-        assertNull(manager.createTable("existing"));
+    public void createExistingTableShouldReturnNull() {
+        String name = existingFile.getName();
+        assertNull(manager.createTable(name));
     }
 
 
@@ -85,20 +95,20 @@ public class TesterOfTableProviderFactoryAndTableProvider {
 
     @Test
     public void getExistingTableShouldRef() {
-        assertNotNull("getTable не обнаружил существующую таблицу", manager.getTable("existing"));
+        assertNotNull("getTable не обнаружил существующую таблицу", manager.getTable(existingFile.getName()));
     }
 
     @Test
     public void doubleGetTableEquals() {
         assertEquals("Дважды вызванный с тем же аргументом getTable возвращает разные объекты",
-                manager.getTable("existing"), manager.getTable("existing"));
+                manager.getTable(existingFile.getName()), manager.getTable(existingFile.getName()));
     }
 
 
     @Test
     public void getExistingTableImplTable() {
         boolean flag = false;
-        Class[] inter = manager.getTable("existing").getClass().getInterfaces();
+        Class[] inter = manager.getTable(existingFile.getName()).getClass().getInterfaces();
         for (Class i:inter) {
             if (i.equals(ru.fizteh.fivt.storage.strings.Table.class)){
                 flag = true;
@@ -141,5 +151,14 @@ public class TesterOfTableProviderFactoryAndTableProvider {
     @Test(expected = IllegalStateException.class)
     public void removeNonexistentTableShouldFail() {
         manager.removeTable("nonexistent");
+    }
+
+    @AfterClass
+    public static void afterAll() {
+        String[] argShell = new String[] {
+                "rm",
+                workingDirFile.toPath().toString()
+        };
+        Shell.main(argShell);
     }
 }
