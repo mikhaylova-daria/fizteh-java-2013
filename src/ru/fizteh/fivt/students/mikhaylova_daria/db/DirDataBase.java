@@ -43,15 +43,13 @@ public class DirDataBase {
     }
 
     void deleteEmptyDir() throws Exception {
-        File[] f = dir.listFiles();
+            File[] f = dir.listFiles();
         if (f != null) {
             if (f.length == 0) {
                 if (!dir.delete()) {
                     throw new Exception("Deleting directory error");
                 }
             }
-        } else {
-            throw new Exception("Internal error");
         }
         isReady = false;
     }
