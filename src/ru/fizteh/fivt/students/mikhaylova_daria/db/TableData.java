@@ -274,7 +274,6 @@ public class TableData implements Table {
             try {
                 dirArray[nDirectory].startWorking();
                 removedValue = dirArray[nDirectory].fileArray[nFile].remove(key, this);
-                dirArray[nDirectory].deleteEmptyDir();
             } catch (Exception e) {
                 throw new IllegalArgumentException(e.getMessage(), e);
             }
@@ -370,11 +369,5 @@ public class TableData implements Table {
         return columnTypes.get(columnIndex);
     }
 
-
-    synchronized void  update() {
-
-
-
-    }
-
 }
+
