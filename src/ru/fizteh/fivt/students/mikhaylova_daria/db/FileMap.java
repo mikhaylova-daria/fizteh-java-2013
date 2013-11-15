@@ -215,9 +215,11 @@ public class FileMap {
         }
         if (file.length() == 0) {
             deleteEmptyFile();
-            if (file.toPath().getParent().toFile().listFiles().length == 0) {
-                if (!file.toPath().getParent().toFile().delete()) {
-                    throw new RuntimeException("Deleting file error");
+            if (file.toPath().getParent().toFile().listFiles() != null) {
+                if (file.toPath().getParent().toFile().listFiles().length == 0) {
+                    if (!file.toPath().getParent().toFile().delete()) {
+                        throw new RuntimeException("Deleting file error");
+                    }
                 }
             }
         }
