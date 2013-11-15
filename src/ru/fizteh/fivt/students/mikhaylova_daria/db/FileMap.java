@@ -43,6 +43,9 @@ public class FileMap {
         if (key == null) {
             throw new IllegalArgumentException("key is null");
         }
+        if (value == null) {
+            throw new IllegalArgumentException("value is null");
+        }
         if (key.contains(" ") || key.contains("\n") || key.contains("\t")) {
             throw new IllegalArgumentException("Bad char in key");
         }
