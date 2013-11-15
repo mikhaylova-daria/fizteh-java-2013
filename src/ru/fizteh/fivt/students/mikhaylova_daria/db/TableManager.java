@@ -11,6 +11,9 @@ import java.io.StringWriter;
 import java.text.ParseException;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.zip.DataFormatException;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -27,6 +30,8 @@ import ru.fizteh.fivt.storage.structured.*;
 public class TableManager implements TableProvider {
     private HashMap<String, TableData> bidDataBase = new HashMap<String, TableData>();
     private File mainDir;
+    private final Lock creatingLock = new ReentrantLock();
+    private final Lock deletingLock = new ReentrantLock();
 
     TableManager(String nameMainDir) throws IllegalArgumentException, IOException {
         if (nameMainDir == null) {
@@ -143,14 +148,19 @@ public class TableManager implements TableProvider {
         String correctName = mainDir.toPath().toAbsolutePath().normalize().resolve(nameTable).toString();
         File creatingTableFile = new File(correctName);
         TableData creatingTable = null;
-        if (!creatingTableFile.exists()) {
-            creatingTable = new TableData(creatingTableFile, columnTypes, this);
-            if (!creatingTableFile.isDirectory()) {
-                throw new IllegalArgumentException("wrong type (" + correctName + "is not directory)");
+        creatingLock.lock();
+        try {
+            if (!creatingTableFile.exists()) {
+                creatingTable = new TableData(creatingTableFile, columnTypes, this);
+                if (!creatingTableFile.isDirectory()) {
+                    throw new IllegalArgumentException("wrong type (" + correctName + "is not directory)");
+                }
+                if (!bidDataBase.containsKey(nameTable)) {
+                    bidDataBase.put(nameTable, creatingTable);
+                }
             }
-            if (!bidDataBase.containsKey(nameTable)) {
-                bidDataBase.put(nameTable, creatingTable);
-            }
+        } finally {
+            creatingLock.unlock();
         }
         return creatingTable;
     }
@@ -208,15 +218,20 @@ public class TableManager implements TableProvider {
         }
         String correctName = mainDir.toPath().toAbsolutePath().normalize().resolve(nameTable).toString();
         File creatingTableFile = new File(correctName);
-        if (!creatingTableFile.exists()) {
-            throw new IllegalStateException("wrong type (Table " + nameTable + "does not exist)");
-        } else {
-            String[] argShell = new String[] {
-                    "rm",
-                    creatingTableFile.toPath().toString()
-            };
-            Shell.main(argShell);
-            bidDataBase.remove(nameTable);
+        deletingLock.lock();
+        try {
+            if (!creatingTableFile.exists()) {
+                throw new IllegalStateException("wrong type (Table " + nameTable + "does not exist)");
+            } else {
+                String[] argShell = new String[] {
+                        "rm",
+                        creatingTableFile.toPath().toString()
+                };
+                Shell.main(argShell);
+                bidDataBase.remove(nameTable);
+            }
+        } finally {
+            deletingLock.unlock();
         }
     }
 

@@ -3,6 +3,7 @@ package ru.fizteh.fivt.students.mikhaylova_daria.db;
 import java.io.*;
 import java.text.ParseException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.Vector;
 import java.util.zip.DataFormatException;
@@ -10,7 +11,17 @@ import ru.fizteh.fivt.storage.structured.*;
 
 public class FileMap {
     private HashMap<String, Storeable> fileMapInitial = new HashMap<String, Storeable>();
-    private HashMap<String, Storeable> fileMap = new HashMap<String, Storeable>();
+    private ThreadLocal<HashMap<String, Storeable>> fileMapNewValue = new ThreadLocal<HashMap<String, Storeable>>() {
+        @Override protected HashMap<String, Storeable> initialValue() {
+            return null;
+        }
+    };
+    private ThreadLocal<HashSet<String>> fileMapRemoveKey = new ThreadLocal<HashSet<String>>() {
+        @Override protected HashSet<String> initialValue() {
+            return null;
+        }
+    };
+
     private File file;
     private int size = 0;
     private Short[] id;
@@ -38,6 +49,12 @@ public class FileMap {
         if (key.isEmpty()) {
             throw new IllegalArgumentException("key is empty");
         }
+        if (fileMapNewValue.get() == null) {
+            fileMapNewValue.set(new HashMap<String, Storeable>());
+        }
+        if (fileMapRemoveKey.get() == null) {
+            fileMapRemoveKey.set(new HashSet<String>());
+        }
         try {
             table.manager.serialize(table, value);
         } catch (Exception e) {
@@ -52,10 +69,25 @@ public class FileMap {
                 throw new RuntimeException("Reading error", e);
             }
         }
-        return fileMap.put(key, value);
+
+        if (fileMapRemoveKey.get().contains(key)) {
+            fileMapRemoveKey.get().remove(key);
+        }
+        if ((!fileMapInitial.containsKey(key)) || fileMapNewValue.get().containsKey(key)) {
+            return fileMapNewValue.get().put(key, value);
+        } else {
+            fileMapNewValue.get().put(key, value);
+            return fileMapInitial.get(key);
+        }
     }
 
     public Storeable get(String key, TableData table) throws IllegalArgumentException {
+        if (fileMapNewValue.get() == null) {
+            fileMapNewValue.set(new HashMap<String, Storeable>());
+        }
+        if (fileMapRemoveKey.get() == null) {
+            fileMapRemoveKey.set(new HashSet<String>());
+        }
         if (table == null) {
             throw new IllegalArgumentException("Table is null");
         }
@@ -77,7 +109,15 @@ public class FileMap {
                 throw new RuntimeException("Reading error", e);
             }
         }
-        return fileMap.get(key);
+        if (fileMapNewValue.get().containsKey(key)) {
+            return fileMapNewValue.get().get(key);
+        } else {
+            if (fileMapRemoveKey.get().contains(key)) {
+                return null;
+            } else {
+                return fileMapInitial.get(key);
+            }
+        }
     }
 
     public Storeable remove(String key, TableData table) throws IllegalArgumentException {
@@ -93,6 +133,12 @@ public class FileMap {
         if (key.isEmpty()) {
             throw new IllegalArgumentException("key is empty");
         }
+        if (fileMapNewValue.get() == null) {
+            fileMapNewValue.set(new HashMap<String, Storeable>());
+        }
+        if (fileMapRemoveKey.get() == null) {
+            fileMapRemoveKey.set(new HashSet<String>());
+        }
         if (!isLoaded) {
             try {
                 readerFile(table);
@@ -102,7 +148,26 @@ public class FileMap {
                 throw new RuntimeException("Reading error", e);
             }
         }
-        return fileMap.remove(key);
+        if (fileMapNewValue.get().containsKey(key)) {
+            if (!fileMapInitial.containsKey(key)) {
+                return fileMapNewValue.get().remove(key);
+            } else {
+                fileMapRemoveKey.get().add(key);
+                return fileMapNewValue.get().remove(key);
+            }
+
+        } else {
+            if (fileMapRemoveKey.get().contains(key)) {
+                return null;
+            } else {
+                if (fileMapInitial.containsKey(key)) {
+                    fileMapRemoveKey.get().add(key);
+                    return fileMapInitial.get(key);
+                } else {
+                    return null;
+                }
+            }
+        }
     }
 
     private void writerFile(TableData table) throws Exception {
@@ -114,7 +179,7 @@ public class FileMap {
             HashMap<String, Long> offsets = new HashMap<String, Long>();
             long currentOffsetOfValue;
             long offset = fileDataBase.getFilePointer();
-            for (String key: fileMap.keySet()) {
+            for (String key: fileMapInitial.keySet()) {
                 fileDataBase.write(key.getBytes("UTF8"));
                 fileDataBase.write("\0".getBytes());
                 offset = fileDataBase.getFilePointer();
@@ -124,8 +189,8 @@ public class FileMap {
             }
 
             long currentPosition = 0;
-            for (String key: fileMap.keySet()) {
-                String value = table.manager.serialize(table, fileMap.get(key));
+            for (String key: fileMapInitial.keySet()) {
+                String value = table.manager.serialize(table, fileMapInitial.get(key));
                 fileDataBase.write(value.getBytes("UTF8"));
                 currentPosition  = fileDataBase.getFilePointer();
                 currentOffsetOfValue = currentPosition - value.getBytes("UTF8").length;
@@ -147,23 +212,41 @@ public class FileMap {
         }
         if (file.length() == 0) {
             deleteEmptyFile();
+            if (file.toPath().getParent().toFile().listFiles().length == 0) {
+                if (!file.toPath().getParent().toFile().delete()) {
+                    throw new RuntimeException("Deleting file error");
+                }
+            }
         }
-        size = fileMap.size();
-        fileMapInitial.clear();
-        for (String key: fileMap.keySet()) {
-            fileMapInitial.put(key, fileMap.get(key));
-        }
+
+        fileMapRemoveKey.get().clear();
+        fileMapNewValue.get().clear();
+
     }
 
     private boolean deleteEmptyFile() {
+        if (fileMapNewValue.get() == null) {
+            fileMapNewValue.set(new HashMap<String, Storeable>());
+        }
+        if (fileMapRemoveKey.get() == null) {
+            fileMapRemoveKey.set(new HashSet<String>());
+        }
         isLoaded = false;
-        fileMap.clear();
+        fileMapRemoveKey.get().clear();
+        fileMapNewValue.get().clear();
         return file.delete();
     }
 
     void setAside() {
+        if (fileMapNewValue.get() == null) {
+            fileMapNewValue.set(new HashMap<String, Storeable>());
+        }
+        if (fileMapRemoveKey.get() == null) {
+            fileMapRemoveKey.set(new HashSet<String>());
+        }
         if (isLoaded) {
-            fileMap.clear();
+            fileMapRemoveKey.get().clear();
+            fileMapNewValue.get().clear();
             fileMapInitial.clear();
             isLoaded = false;
         }
@@ -173,6 +256,7 @@ public class FileMap {
         if (table == null) {
             throw new IllegalArgumentException("Table is null");
         }
+        fileMapInitial.clear();
         Exception e = new Exception("Reading error");
         Storeable storeableValue;
         RandomAccessFile dataBase = null;
@@ -233,7 +317,7 @@ public class FileMap {
                 }
                 String value = new String(valueInBytes, "UTF8");
                 storeableValue = table.manager.deserialize(table, value);
-                fileMap.put(key, storeableValue);
+                fileMapInitial.put(key, storeableValue);
             }
         } catch (FileNotFoundException e1) {
             e = e1;
@@ -250,11 +334,6 @@ public class FileMap {
                 }
             }
         }
-        fileMapInitial.clear();
-        for (String key: fileMap.keySet()) {
-            fileMapInitial.put(key, fileMap.get(key));
-        }
-        size = fileMap.size();
         isLoaded = true;
     }
 
@@ -284,12 +363,18 @@ public class FileMap {
     }
 
     int numberOfChangesCounter(TableData table) {
+        if (fileMapNewValue.get() == null) {
+            fileMapNewValue.set(new HashMap<String, Storeable>());
+        }
+        if (fileMapRemoveKey.get() == null) {
+            fileMapRemoveKey.set(new HashSet<String>());
+        }
         int numberOfChanges = 0;
-        Set<String> newKeys = fileMap.keySet();
+        Set<String> newKeys = fileMapNewValue.get().keySet();
         Set<String> oldKeys = fileMapInitial.keySet();
         for (String key: newKeys) {
             if (oldKeys.contains(key)) {
-                String val1 = table.manager.serialize(table, fileMap.get(key));
+                String val1 = table.manager.serialize(table, fileMapNewValue.get().get(key));
                 String val2 = table.manager.serialize(table, fileMapInitial.get(key));
                 if (!val1.equals(val2)) {
                     ++numberOfChanges;
@@ -298,8 +383,9 @@ public class FileMap {
                 ++numberOfChanges;
             }
         }
-        for (String key: oldKeys) {
-            if (!newKeys.contains(key)) {
+        Set<String> removeKeys = fileMapRemoveKey.get();
+        for (String key: removeKeys) {
+            if (oldKeys.contains(key)) {
                 ++numberOfChanges;
             }
         }
@@ -308,31 +394,67 @@ public class FileMap {
 
 
     void commit(TableData table) {
+        if (fileMapNewValue.get() == null) {
+            fileMapNewValue.set(new HashMap<String, Storeable>());
+        }
+        if (fileMapRemoveKey.get() == null) {
+            fileMapRemoveKey.set(new HashSet<String>());
+        }
         if (table == null) {
             throw new IllegalArgumentException("Table is null");
         }
         int numberOfChanges = numberOfChangesCounter(table);
         if (numberOfChanges != 0) {
+            Set<String> newKeys = fileMapNewValue.get().keySet();
+            Set<String> oldKeys = fileMapInitial.keySet();
+            for (String key: newKeys) {
+                if (oldKeys.contains(key)) {
+                    String val1 = table.manager.serialize(table, fileMapNewValue.get().get(key));
+                    String val2 = table.manager.serialize(table, fileMapInitial.get(key));
+                    if (!val1.equals(val2)) {
+                        fileMapInitial.put(key, fileMapNewValue.get().get(key));
+                    }
+                } else {
+                    fileMapInitial.put(key, fileMapNewValue.get().get(key));
+                }
+            }
+            Set<String> removeKeys = fileMapRemoveKey.get();
+            for (String key: removeKeys) {
+                if (oldKeys.contains(key)) {
+                    fileMapInitial.remove(key);
+                }
+            }
             try {
                 writerFile(table);
             } catch (Exception e) {
+                e.printStackTrace();
                 throw new IllegalArgumentException("Writing error", e);
             }
         }
     }
 
     int rollback(TableData table) {
-        int numberOfChanges = numberOfChangesCounter(table);
-        fileMap.clear();
-        for (String key : fileMapInitial.keySet()) {
-            fileMap.put(key, fileMapInitial.get(key));
+        if (fileMapNewValue.get() == null) {
+            fileMapNewValue.set(new HashMap<String, Storeable>());
         }
+        if (fileMapRemoveKey.get() == null) {
+            fileMapRemoveKey.set(new HashSet<String>());
+        }
+        int numberOfChanges = numberOfChangesCounter(table);
+        fileMapRemoveKey.get().clear();
+        fileMapNewValue.get().clear();
         return numberOfChanges;
     }
 
     int size(TableData table) {
         if (table == null) {
             throw new IllegalArgumentException("Table is null");
+        }
+        if (fileMapNewValue.get() == null) {
+            fileMapNewValue.set(new HashMap<String, Storeable>());
+        }
+        if (fileMapRemoveKey.get() == null) {
+            fileMapRemoveKey.set(new HashSet<String>());
         }
         if (!isLoaded) {
             try {
@@ -343,7 +465,15 @@ public class FileMap {
                 throw new IllegalArgumentException("Reading error", e);
             }
         }
-        return fileMap.size();
+        Set<String> newKeys = fileMapNewValue.get().keySet();
+        Set<String> oldKeys = fileMapInitial.keySet();
+        int numberOfNew = 0;
+        for (String key: newKeys) {
+            if (!oldKeys.contains(key)) {
+                ++numberOfNew;
+            }
+        }
+        return fileMapInitial.size() - fileMapRemoveKey.get().size() + numberOfNew;
     }
-
 }
+
