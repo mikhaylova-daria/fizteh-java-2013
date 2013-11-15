@@ -174,6 +174,12 @@ public class FileMap {
     }
 
     private void writerFile(TableData table) throws Exception {
+        if (fileMapNewValue.get() == null) {
+            fileMapNewValue.set(new HashMap<String, Storeable>());
+        }
+        if (fileMapRemoveKey.get() == null) {
+            fileMapRemoveKey.set(new HashSet<String>());
+        }
         RandomAccessFile fileDataBase = null;
         Exception e = new Exception("Writing error");
         try {
