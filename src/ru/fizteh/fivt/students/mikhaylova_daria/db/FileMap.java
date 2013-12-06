@@ -1,6 +1,7 @@
 package ru.fizteh.fivt.students.mikhaylova_daria.db;
 
 import java.io.*;
+import java.lang.ref.SoftReference;
 import java.text.ParseException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -10,7 +11,7 @@ import java.util.zip.DataFormatException;
 import ru.fizteh.fivt.storage.structured.*;
 
 public class FileMap {
-    private ConcurrentHashMap<String, Storeable> fileMapInitial = new ConcurrentHashMap<>();
+    private SoftReference<ConcurrentHashMap<String, Storeable>> fileMapInitialCache = null;
     private ThreadLocal<HashMap<String, Storeable>> fileMapNewValue = new ThreadLocal<HashMap<String, Storeable>>() {
         @Override
         protected HashMap<String, Storeable> initialValue() {
@@ -41,7 +42,14 @@ public class FileMap {
         this.file = file;
         this.id = id;
     }
-    private void initialMap() {
+    private void initialMap(TableData table) {
+        if (fileMapInitialCache == null) {
+            try {
+                fileMapInitialCache = new SoftReference<ConcurrentHashMap<String, Storeable>>(readFile(table));
+            } catch (Exception e) {
+                throw new RuntimeException(e.getMessage(), e);
+            }
+        }
         if (fileMapNewValue.get() == null) {
             fileMapNewValue.set(new HashMap<String, Storeable>());
         }
@@ -59,17 +67,19 @@ public class FileMap {
         if (value == null) {
             throw new IllegalArgumentException("value is null");
         }
-        initialMap();
+        initialMap(table);
         try {
             table.manager.serialize(table, value);
         } catch (Exception e) {
             throw new ColumnFormatException("Wrong typelist of value", e);
         }
         myWriteLock.lock();
+        ConcurrentHashMap<String, Storeable> fileMapInitial = fileMapInitialCache.get();
         try {
-            if (!isLoaded) {
+            if (fileMapInitial == null) {
                 try {
-                    readFile(table);
+                    fileMapInitial = readFile(table);
+                    fileMapInitialCache = new SoftReference<ConcurrentHashMap<String, Storeable>>(fileMapInitial);
                 } catch (DataFormatException e) {
                     throw new IllegalArgumentException("Bad data", e);
                 } catch (Exception e) {
@@ -100,16 +110,18 @@ public class FileMap {
     }
 
     public Storeable get(String key, TableData table) throws IllegalArgumentException {
-        initialMap();
         if (table == null) {
             throw new IllegalArgumentException("Table is null");
         }
+        initialMap(table);
         table.checkKey(key);
         myWriteLock.lock();
+        ConcurrentHashMap<String, Storeable> fileMapInitial = fileMapInitialCache.get();
         try {
-            if (!isLoaded) {
+            if (fileMapInitial == null) {
                 try {
-                    readFile(table);
+                    fileMapInitial = readFile(table);
+                    fileMapInitialCache = new SoftReference<ConcurrentHashMap<String, Storeable>>(fileMapInitial);
                 } catch (DataFormatException e) {
                     throw new IllegalArgumentException("Bad data", e);
                 } catch (Exception e) {
@@ -140,12 +152,14 @@ public class FileMap {
             throw new IllegalArgumentException("Table is null");
         }
         table.checkKey(key);
-        initialMap();
+        initialMap(table);
         myWriteLock.lock();
+        ConcurrentHashMap<String, Storeable> fileMapInitial = fileMapInitialCache.get();
         try {
-            if (!isLoaded) {
+            if (fileMapInitial == null) {
                 try {
-                    readFile(table);
+                    fileMapInitial = readFile(table);
+                    fileMapInitialCache = new SoftReference<ConcurrentHashMap<String, Storeable>>(fileMapInitial);
                 } catch (DataFormatException e) {
                     throw new IllegalArgumentException("Bad data", e);
                 } catch (Exception e) {
@@ -183,7 +197,11 @@ public class FileMap {
     }
 
     private void writeFile(TableData table) throws Exception {
-        initialMap();
+        initialMap(table);
+        ConcurrentHashMap<String, Storeable> fileMapInitial = fileMapInitialCache.get();
+        if (fileMapInitial == null) {
+            fileMapInitial = readFile(table);
+        }
         RandomAccessFile fileDataBase = null;
         Exception e = null;
         myWriteLock.lock();
@@ -233,41 +251,25 @@ public class FileMap {
             }
             fileMapRemoveKey.get().clear();
             fileMapNewValue.get().clear();
+            fileMapInitialCache = new SoftReference<>(fileMapInitial);
         } finally {
             myWriteLock.unlock();
         }
     }
 
     private boolean deleteEmptyFile() {
-        initialMap();
-        isLoaded = false;
-        fileMapRemoveKey.get().clear();
-        fileMapNewValue.get().clear();
+        if (fileMapNewValue.get() != null) {
+            fileMapNewValue.get().clear();
+        }
+        if (fileMapRemoveKey.get() != null) {
+            fileMapRemoveKey.get().clear();
+        }
+        fileMapInitialCache.clear();
         return file.delete();
     }
 
-    void setAside() {
-        initialMap();
-        myWriteLock.lock();
-        try {
-            if (isLoaded) {
-                fileMapRemoveKey.get().clear();
-                fileMapNewValue.get().clear();
-                myWriteLock.lock();
-                try {
-                    fileMapInitial.clear();
-                } finally {
-                    myWriteLock.unlock();
-                }
-                isLoaded = false;
-            }
-        } finally {
-            myWriteLock.unlock();
-        }
-    }
-
-    void readFile(TableData table) throws IOException, DataFormatException, ParseException {
-        isLoaded = true;
+    ConcurrentHashMap<String, Storeable> readFile(TableData table)
+            throws IOException, DataFormatException, ParseException {
         if (table == null) {
             throw new IllegalArgumentException("Table is null");
         }
@@ -275,8 +277,8 @@ public class FileMap {
         Storeable storeableValue;
         RandomAccessFile dataBase = null;
         myWriteLock.lock();
+        ConcurrentHashMap<String, Storeable> fileMapInitial = new ConcurrentHashMap<>();
         try {
-            fileMapInitial.clear();
             try {
                 dataBase = new RandomAccessFile(file, "r");
                 HashMap<Integer, String> offsetAndKeyMap = new HashMap<Integer, String>();
@@ -338,7 +340,8 @@ public class FileMap {
                 }
             } catch (FileNotFoundException e1) {
                 e = e1;
-                return;
+                this.fileMapInitialCache = new SoftReference<ConcurrentHashMap<String, Storeable>>(fileMapInitial);
+                return fileMapInitial;
             } catch (EOFException e2) {
                 e = e2;
                 throw new DataFormatException(file.toString());
@@ -356,6 +359,8 @@ public class FileMap {
         } finally {
             myWriteLock.unlock();
         }
+        this.fileMapInitialCache = new SoftReference<ConcurrentHashMap<String, Storeable>>(fileMapInitial);
+        return fileMapInitial;
     }
 
 
@@ -384,11 +389,20 @@ public class FileMap {
     }
 
     int numberOfChangesCounter(TableData table) {
-        initialMap();
+        initialMap(table);
         int numberOfChanges = 0;
+        myReadLock.lock();
+        ConcurrentHashMap<String, Storeable> fileMapInitial = fileMapInitialCache.get();
+        if (fileMapInitial == null) {
+            try {
+                fileMapInitial = readFile(table);
+                fileMapInitialCache = new SoftReference<ConcurrentHashMap<String, Storeable>>(fileMapInitial);
+            } catch (Exception e) {
+                throw new RuntimeException(e.getMessage(), e);
+            }
+        }
         Set<String> newKeys = fileMapNewValue.get().keySet();
         Set<String> oldKeys = fileMapInitial.keySet();
-        myReadLock.lock();
         try {
             for (String key: newKeys) {
                 if (oldKeys.contains(key)) {
@@ -415,11 +429,20 @@ public class FileMap {
 
 
     void commit(TableData table) {
-        initialMap();
+        initialMap(table);
         if (table == null) {
             throw new IllegalArgumentException("Table is null");
         }
         myWriteLock.lock();
+        ConcurrentHashMap<String, Storeable> fileMapInitial = fileMapInitialCache.get();
+        if (fileMapInitial == null) {
+            try {
+                fileMapInitial = readFile(table);
+                fileMapInitialCache = new SoftReference<ConcurrentHashMap<String, Storeable>>(fileMapInitial);
+            } catch (Exception e) {
+                throw new RuntimeException(e.getMessage(), e);
+            }
+        }
         try {
             int numberOfChanges = numberOfChangesCounter(table);
             if (numberOfChanges != 0) {
@@ -455,7 +478,7 @@ public class FileMap {
     }
 
     int rollback(TableData table) {
-        initialMap();
+        initialMap(table);
         int numberOfChanges = numberOfChangesCounter(table);
         fileMapRemoveKey.get().clear();
         fileMapNewValue.get().clear();
@@ -466,12 +489,14 @@ public class FileMap {
         if (table == null) {
             throw new IllegalArgumentException("Table is null");
         }
-        initialMap();
+        initialMap(table);
         myWriteLock.lock();
+        ConcurrentHashMap<String, Storeable> fileMapInitial = fileMapInitialCache.get();
         try {
-            if (!isLoaded) {
+            if (fileMapInitial == null) {
                 try {
-                    readFile(table);
+                    fileMapInitial = readFile(table);
+                    fileMapInitialCache = new SoftReference<ConcurrentHashMap<String, Storeable>>(fileMapInitial);
                 } catch (DataFormatException e) {
                     throw new IllegalArgumentException("Bad dates", e);
                 } catch (Exception e) {
@@ -492,5 +517,4 @@ public class FileMap {
         }
     }
 }
-
 

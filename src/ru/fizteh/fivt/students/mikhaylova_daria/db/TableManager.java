@@ -118,7 +118,6 @@ public class TableManager implements TableProvider, AutoCloseable {
                         try {
                             TableData tableDat = new TableData(tables[i], this);
                             currentFileMap.readFile(tableDat);
-                            currentFileMap.setAside();
                         } catch (DataFormatException e) {
                             throw new IllegalArgumentException(e.getMessage(), e);
                         } catch (ParseException e) {
