@@ -115,8 +115,8 @@ public class TesterOfTableProviderFactoryAndTableProvider {
             provider = factory.create(mainDir.toString());
             provider.createTable(null, goodTypeList);
         } catch (IOException e) {
-            fail();
             e.printStackTrace();
+            fail();
         } finally {
             if (provider != null) {
                 provider.close();
@@ -131,8 +131,8 @@ public class TesterOfTableProviderFactoryAndTableProvider {
             provider = factory.create(mainDir.toString());
             provider.createTable("table", null);
         } catch (IOException e) {
-            fail();
             e.printStackTrace();
+            fail();
         } finally {
             if (provider != null) {
                 provider.close();
@@ -148,8 +148,8 @@ public class TesterOfTableProviderFactoryAndTableProvider {
             goodTypeList.add(Short.class);
             provider.createTable("table", goodTypeList);
         } catch (IOException e) {
-            fail();
             e.printStackTrace();
+            fail();
         } finally {
             if (provider != null) {
                 provider.close();
@@ -164,8 +164,8 @@ public class TesterOfTableProviderFactoryAndTableProvider {
             provider = factory.create(mainDir.toString());
             provider.createTable("table", new ArrayList<Class<?>>());
         } catch (IOException e) {
-            fail();
             e.printStackTrace();
+            fail();
         } finally {
             if (provider != null) {
                 provider.close();
@@ -181,8 +181,8 @@ public class TesterOfTableProviderFactoryAndTableProvider {
             provider = factory.create(mainDir.toString());
             provider.createTable(" ", goodTypeList);
         } catch (IOException e) {
-            fail();
             e.printStackTrace();
+            fail();
         } finally {
             if (provider != null) {
                 provider.close();
@@ -197,8 +197,8 @@ public class TesterOfTableProviderFactoryAndTableProvider {
             provider = factory.create(mainDir.toString());
             provider.createTable("a/b", goodTypeList);
         } catch (IOException e) {
-            fail();
             e.printStackTrace();
+            fail();
         } finally {
             if (provider != null) {
                 provider.close();
@@ -213,8 +213,8 @@ public class TesterOfTableProviderFactoryAndTableProvider {
             provider = factory.create(mainDir.toString());
             provider.createTable("a\\b", goodTypeList);
         } catch (IOException e) {
-            fail();
             e.printStackTrace();
+            fail();
         } finally {
             if (provider != null) {
                 provider.close();
@@ -229,8 +229,8 @@ public class TesterOfTableProviderFactoryAndTableProvider {
             provider = factory.create(mainDir.toString());
             provider.createTable("..", goodTypeList);
         } catch (IOException e) {
-            fail();
             e.printStackTrace();
+            fail();
         } finally {
             if (provider != null) {
                 provider.close();
@@ -245,8 +245,8 @@ public class TesterOfTableProviderFactoryAndTableProvider {
             provider = factory.create(mainDir.toString());
             provider.createTable(".", goodTypeList);
         } catch (IOException e) {
-            fail();
             e.printStackTrace();
+            fail();
         } finally {
             if (provider != null) {
                 provider.close();
@@ -262,8 +262,8 @@ public class TesterOfTableProviderFactoryAndTableProvider {
             assertNull("Не работает createTable: не находит существующую таблицу",
                     provider.createTable(goodTable.getName(), goodTypeList));
         } catch (IOException e) {
-            fail();
             e.printStackTrace();
+            fail();
         } finally {
             if (provider != null) {
                 provider.close();
@@ -279,8 +279,8 @@ public class TesterOfTableProviderFactoryAndTableProvider {
             provider = factory.create(mainDir.toString());
             Table table = provider.getTable("\n");
         } catch (IOException e) {
-            fail();
             e.printStackTrace();
+            fail();
         } finally {
             if (provider != null) {
                 provider.close();
@@ -295,8 +295,8 @@ public class TesterOfTableProviderFactoryAndTableProvider {
         try {
             provider = factory.create(null);
         } catch (IOException e) {
-            fail();
             e.printStackTrace();
+            fail();
         } finally {
             if (provider != null) {
                 provider.close();
@@ -312,8 +312,8 @@ public class TesterOfTableProviderFactoryAndTableProvider {
             provider = factory.create(mainDir.toString());
             table = provider.getTable(null);
         } catch (IOException e) {
-            fail();
             e.printStackTrace();
+            fail();
         } finally {
             if (provider != null) {
                 provider.close();
@@ -328,8 +328,8 @@ public class TesterOfTableProviderFactoryAndTableProvider {
             provider = factory.create(mainDir.toString());
             TableData table = provider.getTable(badTableEmpty.getName());
         } catch (IOException e) {
-            fail();
             e.printStackTrace();
+            fail();
         } finally {
             if (provider != null) {
                 provider.close();
@@ -344,8 +344,8 @@ public class TesterOfTableProviderFactoryAndTableProvider {
             provider = factory.create(mainDir.toString());
             TableData table = provider.getTable(badTableEmpty.getName());
         } catch (IOException e) {
-            fail();
             e.printStackTrace();
+            fail();
         } finally {
             if (provider != null) {
                 provider.close();
@@ -362,8 +362,8 @@ public class TesterOfTableProviderFactoryAndTableProvider {
             assertNotNull("не работает getTable()", table);
             assertEquals("не работает getTable() или getName()", table.getName(), goodTable.getName());
         } catch (IOException e) {
-            fail();
             e.printStackTrace();
+            fail();
         } finally {
             if (provider != null) {
                 provider.close();
@@ -379,8 +379,8 @@ public class TesterOfTableProviderFactoryAndTableProvider {
             assertNull("не работает getTable() : возвращает не null от несуществующий таблицы",
                     provider.getTable("nonexistentTable"));
         } catch (IOException e) {
-            fail();
             e.printStackTrace();
+            fail();;
         } finally {
             if (provider != null) {
                 provider.close();
@@ -398,8 +398,8 @@ public class TesterOfTableProviderFactoryAndTableProvider {
             assertEquals("не работает getTable(): вызванное дважды с тем же аргументов возвращает разные объекты",
                     provider.getTable(goodTable.getName()), provider.getTable(goodTable.getName()));
         } catch (IOException e) {
-            fail();
             e.printStackTrace();
+            fail();
         } finally {
             if (provider != null) {
                 provider.close();
@@ -414,8 +414,8 @@ public class TesterOfTableProviderFactoryAndTableProvider {
             provider = factory.create(mainDir.toString());
             provider.removeTable(null);
         } catch (IOException e) {
-            fail();
             e.printStackTrace();
+            fail();
         } finally {
             if (provider != null) {
                 provider.close();
@@ -430,8 +430,8 @@ public class TesterOfTableProviderFactoryAndTableProvider {
             provider = factory.create(mainDir.toString());
             provider.removeTable("\t");
         } catch (IOException e) {
-            fail();
             e.printStackTrace();
+            fail();
         } finally {
             if (provider != null) {
                 provider.close();
@@ -446,8 +446,8 @@ public class TesterOfTableProviderFactoryAndTableProvider {
             provider = factory.create(mainDir.toString());
             provider.removeTable("a/b");
         } catch (IOException e) {
-            fail();
             e.printStackTrace();
+            fail();
         } finally {
             if (provider != null) {
                 provider.close();
@@ -462,8 +462,8 @@ public class TesterOfTableProviderFactoryAndTableProvider {
             provider = factory.create(mainDir.toString());
             provider.removeTable("a\\b");
         } catch (IOException e) {
-            fail();
             e.printStackTrace();
+            fail();
         } finally {
             if (provider != null) {
                 provider.close();
@@ -478,8 +478,8 @@ public class TesterOfTableProviderFactoryAndTableProvider {
             provider = factory.create(mainDir.toString());
             provider.removeTable(".");
         } catch (IOException e) {
-            fail();
             e.printStackTrace();
+            fail();
         } finally {
             if (provider != null) {
                 provider.close();
@@ -494,8 +494,8 @@ public class TesterOfTableProviderFactoryAndTableProvider {
             provider = factory.create(mainDir.toString());
             provider.removeTable("..");
         } catch (IOException e) {
-            fail();
             e.printStackTrace();
+            fail();
         }  finally {
             if (provider != null) {
                 provider.close();
@@ -511,8 +511,8 @@ public class TesterOfTableProviderFactoryAndTableProvider {
             provider = factory.create(mainDir.toString());
             provider.removeTable("nonexistentTable");
         } catch (IOException e) {
-            fail();
             e.printStackTrace();
+            fail();
         } finally {
             if (provider != null) {
                 provider.close();
@@ -531,11 +531,11 @@ public class TesterOfTableProviderFactoryAndTableProvider {
             provider.deserialize(table, "");
             provider.deserialize(table, "\n");
         } catch (IOException e) {
-            fail();
             e.printStackTrace();
+            fail();
         } catch (ParseException e) {
-            fail();
             e.printStackTrace();
+            fail();
         }  finally {
             if (provider != null) {
                 provider.close();
@@ -656,11 +656,11 @@ public class TesterOfTableProviderFactoryAndTableProvider {
             assertNotNull("не работает getTable для существующей таблицы", table);
             provider.deserialize(table, null);
         } catch (IOException e) {
-            fail();
             e.printStackTrace();
+            fail();
         } catch (ParseException e) {
-            fail();
             e.printStackTrace();
+            fail();
         } finally {
             if (provider != null) {
                 provider.close();
@@ -676,8 +676,8 @@ public class TesterOfTableProviderFactoryAndTableProvider {
             provider = factory.create(mainDir.toString());
             provider.createFor(null);
         } catch (IOException e) {
-            fail();
             e.printStackTrace();
+            fail();
         } finally {
             if (provider != null) {
                 provider.close();
@@ -692,8 +692,8 @@ public class TesterOfTableProviderFactoryAndTableProvider {
             provider = factory.create(mainDir.toString());
             provider.createFor(null, goodValueList);
         } catch (IOException e) {
-            fail();
             e.printStackTrace();
+            fail();
         } finally {
             if (provider != null) {
                 provider.close();
@@ -709,8 +709,8 @@ public class TesterOfTableProviderFactoryAndTableProvider {
             TableData table = provider.getTable(goodTable.getName());
             provider.createFor(table, null);
         } catch (IOException e) {
-            fail();
             e.printStackTrace();
+            fail();
         } finally {
             if (provider != null) {
                 provider.close();
@@ -726,8 +726,8 @@ public class TesterOfTableProviderFactoryAndTableProvider {
             TableData table = provider.getTable(goodTable.getName());
             provider.createFor(table, new ArrayList<Object>());
         } catch (IOException e) {
-            fail();
             e.printStackTrace();
+            fail();
         } finally {
             if (provider != null) {
                 provider.close();
@@ -745,8 +745,8 @@ public class TesterOfTableProviderFactoryAndTableProvider {
             array.add("123");
             provider.createFor(table, array);
         } catch (IOException e) {
-            fail();
             e.printStackTrace();
+            fail();
         } finally {
             if (provider != null) {
                 provider.close();
@@ -762,8 +762,8 @@ public class TesterOfTableProviderFactoryAndTableProvider {
             TableData table = provider.getTable(goodTable.getName());
             provider.createFor(table, wrongValueList);
         } catch (IOException e) {
-            fail();
             e.printStackTrace();
+            fail();
         } finally {
             if (provider != null) {
                 provider.close();
@@ -779,8 +779,8 @@ public class TesterOfTableProviderFactoryAndTableProvider {
             goodValueList.add("456");
             provider.createFor(table, goodValueList);
         } catch (IOException e) {
-            fail();
             e.printStackTrace();
+            fail();
         }
     }
 

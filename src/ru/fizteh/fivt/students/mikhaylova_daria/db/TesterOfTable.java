@@ -131,8 +131,8 @@ public class TesterOfTable {
             assertEquals("Не работает serialize и/или deserialize", provider.serialize(table, stor), goodStrVal);
             assertNull("Не работает serialize и/или deserialize и/или put", s);
         } catch (Exception e) {
-            fail();
             e.printStackTrace();
+            fail();
         }
     }
 
@@ -151,8 +151,8 @@ public class TesterOfTable {
             assertEquals("Не работает remove", provider.serialize(table, stor), goodStrVal);
             assertNull("Не работает get на отсутствующее значение или remove", table.get("key"));
         } catch (Exception e) {
-            fail();
             e.printStackTrace();
+            fail();
         }
     }
 
@@ -162,8 +162,8 @@ public class TesterOfTable {
         try {
             stor = provider.deserialize(table, goodStrVal);
         } catch (Exception e) {
-            fail();
             e.printStackTrace();
+            fail();
         }
         table.put(null, stor);
     }
@@ -179,8 +179,8 @@ public class TesterOfTable {
         try {
             stor = provider.deserialize(table, goodStrVal);
         } catch (Exception e) {
-            fail();
             e.printStackTrace();
+            fail();
         }
         table.put("  ", stor);
     }
@@ -195,8 +195,8 @@ public class TesterOfTable {
             other = provider.createTable("other", oth);
             stor = provider.deserialize(table, goodStrVal);
         } catch (Exception e) {
-            fail();
             e.printStackTrace();
+            fail();
         }
         other.put("key", stor);
     }
@@ -244,8 +244,8 @@ public class TesterOfTable {
                     t.put("new1", v1).getStringAt(0), "value");
             assertEquals("после добавления того же значения изменился размер таблицы", nAfter, t.size());
         } catch (IOException e) {
-            fail();
             e.printStackTrace();
+            fail();
         }
     }
 
@@ -255,8 +255,8 @@ public class TesterOfTable {
             table.commit();
             assertEquals(table.commit(), 0);
         } catch (Exception e) {
-            fail();
             e.printStackTrace();
+            fail();
         }
     }
 
@@ -266,8 +266,8 @@ public class TesterOfTable {
             table.commit();
             assertEquals(table.rollback(), 0);
         } catch (Exception e) {
-            fail();
             e.printStackTrace();
+            fail();
         }
     }
 
@@ -291,8 +291,8 @@ public class TesterOfTable {
             assertEquals("неправильный подсчёт элементов", 3, nAfter - nBefore);
             assertEquals("неправильно работает commit", 3, commitSize);
         } catch (IOException e) {
-            fail();
             e.printStackTrace();
+            fail();
         }
     }
 
